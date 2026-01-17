@@ -15,6 +15,9 @@ godot.app
 Godot.exe
 godot.exe
 
+# Rust application ignores
+# ...
+
 # Testing-related ignores
 # ...
 

@@ -46,6 +46,45 @@ jobs:
           RELEASE_INFO: ${{ toJson(steps.release.outputs) }}
         run: echo $RELEASE_INFO
 
+  build:
+    needs: ["release-please"]
+    if: needs.release-please.outputs.release-created == 'true'
+
+    uses: "./.github/workflows/build-baproto-gdscript.yml"
+    with:
+      archive-name: ${{ matrix.archive }}
+      target: ${{ matrix.target }}
+      os: ${{ matrix.os }}
+      use_cross: ${{ matrix.use_cross == true }}
+      timeout: 15
+
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          # Apple
+          - archive: baproto-gdscript-${{ needs.release-please.outputs.release-tag }}-macos-arm64.tar.gz
+            target: aarch64-apple-darwin
+            os: macos-latest
+          - archive: baproto-gdscript-${{ needs.release-please.outputs.release-tag }}-macos-x86_64.tar.gz
+            target: x86_64-apple-darwin
+            os: macos-latest
+
+          # Linux
+          - archive: baproto-gdscript-${{ needs.release-please.outputs.release-tag }}-linux-x86_64.tar.gz
+            target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+            use_cross: true
+          - archive: baproto-gdscript-${{ needs.release-please.outputs.release-tag }}-linux-arm64.tar.gz
+            target: aarch64-unknown-linux-gnu
+            os: ubuntu-latest
+            use_cross: true
+
+          # Windows
+          - archive: baproto-gdscript-${{ needs.release-please.outputs.release-tag }}-windows-x86_64.zip
+            target: x86_64-pc-windows-msvc
+            os: windows-latest
+
   release-branch:
     needs: ["release-please"]
     if: |
@@ -61,6 +100,42 @@ jobs:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
         with:
           submodules: true
+
+      # ------------------------- Download: Binaries ------------------------- #
+
+      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
+        with:
+          path: ./bin
+          merge-multiple: true
+
+      - name: Extract artifacts
+        run: |
+          extract() {
+            TARGET="$1"
+            EXT="$2"
+
+            mkdir bin/$TARGET
+
+            FILE="bin/baproto-gdscript-${{ needs.release-please.outputs.release-tag }}-${TARGET}.${EXT}"
+            if [[ "$EXT" == 'zip' ]]; then
+              unzip $FILE -d bin/$TARGET
+            else
+              tar -C bin/$TARGET -xzf $FILE
+            fi
+
+          }
+
+          # Extract all compiled binaries
+          extract macos-arm64 tar.gz
+          extract macos-x86_64 tar.gz
+          extract linux-x86_64 tar.gz
+          extract linux-arm64 tar.gz
+          extract windows-x86_64 zip
+
+          # Delete compressed artifacts
+          rm -rf ./bin/*.tar.gz ./bin/*.zip
+
+      # --------------------------- Publish: Plugin -------------------------- #
 
       - uses: coffeebeats/godot-infra/.github/actions/parse-godot-version@v3
         id: version

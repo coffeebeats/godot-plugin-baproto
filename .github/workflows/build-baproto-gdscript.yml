@@ -107,7 +107,7 @@ jobs:
         if: runner.os != 'Windows'
         run: |
           tar \
-          -C "target/${{ inputs.target }}/release" \
+          -C "generate/target/${{ inputs.target }}/release" \
           -czf ${{ inputs.archive-name }} \
           "baproto"
 
@@ -117,7 +117,7 @@ jobs:
           cat <<- EOM | python3 -c "$(</dev/stdin)"
           from zipfile import ZipFile
           with ZipFile("${{ inputs.archive-name }}", mode="w") as a:
-            a.write("target/${{ inputs.target }}/release/baproto.exe", arcname="baproto.exe")
+            a.write("generate/target/${{ inputs.target }}/release/baproto.exe", arcname="baproto.exe")
           EOM
 
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f

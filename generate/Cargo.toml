@@ -1,0 +1,12 @@
+[package]
+  name         = "baproto-gdscript"
+  version      = "0.1.0"
+  description  = "A Godot addon that provides an editor plugin which compiles `build-a-proto` schema files into GDScript."
+  edition      = "2024"
+  rust-version = "1.92.0"
+
+[[bin]]
+  name = "baproto-gdscript"
+  path = "src/main.rs"
+
+[dependencies]

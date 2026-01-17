@@ -20,3 +20,11 @@ updates:
       - coffeebeats
     schedule:
       interval: "monthly"
+
+  # Update binary application dependencies
+  - package-ecosystem: "cargo"
+    directory: "/generate"
+    reviewers:
+      - coffeebeats
+    schedule:
+      interval: "monthly"

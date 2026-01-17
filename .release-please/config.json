@@ -20,7 +20,12 @@
 
       "changelog-path": "CHANGELOG.md",
 
-      "extra-files": ["plugin.cfg", "generate/Cargo.toml"]
+      "extra-files": ["plugin.cfg"]
+    },
+    "generate": {
+      "release-type": "rust",
+      "skip-changelog": true,
+      "skip-github-release": true
     }
   }
 }

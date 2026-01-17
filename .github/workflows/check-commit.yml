@@ -1,0 +1,78 @@
+name: "🔎 Check: 'baproto-gdscript' plugin"
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  ACTIONS_BOT_TOKEN: ${{ secrets.GHA_TOKEN }}
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    outputs:
+      has_gdscript_change: "${{ steps.check-godot-source.outputs.any_modified == 'true' }}"
+      has_rust_change: "${{ steps.check-rust-source.outputs.any_modified == 'true' }}"
+
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
+        with:
+          fetch-depth: 0
+
+      - name: Check for any non-source code changes
+        id: check-godot-source
+        uses: tj-actions/changed-files@e0021407031f5be11a464abee9a0776171c79891
+        with:
+          exclude_submodules: true
+          files: "**/*.gd"
+
+      - name: Check for any non-source code changes
+        id: check-rust-source
+        uses: tj-actions/changed-files@e0021407031f5be11a464abee9a0776171c79891
+        with:
+          files: |
+            **/*.rs
+            **/Cargo.*
+
+  check-godot:
+    needs: ["changes"]
+    uses: "./.github/workflows/check-commit-godot.yml"
+    secrets: inherit
+    with:
+      has_source_change: ${{ needs.changes.outputs.has_gdscript_change }}
+
+  check-rust:
+    needs: ["changes"]
+    uses: "./.github/workflows/check-commit-rust.yml"
+    secrets: inherit
+    with:
+      has_source_change: ${{ needs.changes.outputs.has_rust_change }}
+
+  # Used to ensure all branch protection requirements are met. This is a workaround until
+  # https://github.com/github-community/community/discussions/4324 is addressed.
+  branch_protection:
+    needs: ["check-godot", "check-rust"]
+    if: ${{ always() }}
+
+    runs-on: ubuntu-latest
+    timeout-minutes: 1
+
+    steps:
+      - name: Verify status of dependencies
+        if: |
+          always() &&
+          (contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled'))
+        run: exit 1

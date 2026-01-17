@@ -82,8 +82,7 @@ jobs:
         id: format
         continue-on-error: true
         working-directory: generate
-        run: |
-          cargo fmt check
+        run: cargo fmt --check
 
       - name: Fix formatting of source code
         if: steps.format.outcome == 'failure'

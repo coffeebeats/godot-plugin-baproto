@@ -26,10 +26,10 @@ jobs:
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
 
-      - uses: "coffeebeats/build-a-proto/.github/actions/parse-rust-version@v0.2.2"
+      - uses: "coffeebeats/build-a-proto/.github/actions/parse-rust-version@7d9f999e5744a42cf201a0045c39203295d71ec6"
         id: rust
         with:
-          manifest-path: Cargo.toml
+          manifest-path: generate/Cargo.toml
 
   build:
     needs: ["config"]
@@ -40,12 +40,13 @@ jobs:
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
 
-      - uses: "coffeebeats/build-a-proto/.github/actions/setup-rust@v0.2.2"
+      - uses: "coffeebeats/build-a-proto/.github/actions/setup-rust@7d9f999e5744a42cf201a0045c39203295d71ec6"
         with:
           version: ${{ needs.config.outputs.rust_version }}
+          manifest-path: generate/Cargo.toml
           profile: minimal
 
-      - uses: "coffeebeats/build-a-proto/.github/actions/cargo-build@v0.2.2"
+      - uses: "coffeebeats/build-a-proto/.github/actions/cargo-build@7d9f999e5744a42cf201a0045c39203295d71ec6"
         with:
           manifest-path: generate/Cargo.toml
           profile: release
@@ -69,12 +70,13 @@ jobs:
           # Use a PAT so that GitHub Actions will trigger on the resulting commit.
           token: ${{ secrets.GHA_TOKEN }}
 
-      - uses: "coffeebeats/build-a-proto/.github/actions/setup-rust@v0.2.2"
+      - uses: "coffeebeats/build-a-proto/.github/actions/setup-rust@7d9f999e5744a42cf201a0045c39203295d71ec6"
         id: setup-rust
         with:
-          version: ${{ needs.config.outputs.rust_version }}
-          profile: minimal
           components: rustfmt
+          manifest-path: generate/Cargo.toml
+          profile: minimal
+          version: ${{ needs.config.outputs.rust_version }}
 
       - name: Check Rust source formatting
         id: format
@@ -112,13 +114,14 @@ jobs:
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
 
-      - uses: "coffeebeats/build-a-proto/.github/actions/setup-rust@v0.2.2"
+      - uses: "coffeebeats/build-a-proto/.github/actions/setup-rust@7d9f999e5744a42cf201a0045c39203295d71ec6"
         with:
-          version: ${{ needs.config.outputs.rust_version }}
-          profile: minimal
           components: clippy
+          manifest-path: generate/Cargo.toml
+          profile: minimal
+          version: ${{ needs.config.outputs.rust_version }}
 
-      - uses: "coffeebeats/build-a-proto/.github/actions/cargo-build@v0.2.2"
+      - uses: "coffeebeats/build-a-proto/.github/actions/cargo-build@7d9f999e5744a42cf201a0045c39203295d71ec6"
         with:
           manifest-path: generate/Cargo.toml
           profile: release
@@ -142,12 +145,13 @@ jobs:
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
 
-      - uses: "coffeebeats/build-a-proto/.github/actions/setup-rust@v0.2.2"
+      - uses: "coffeebeats/build-a-proto/.github/actions/setup-rust@7d9f999e5744a42cf201a0045c39203295d71ec6"
         with:
-          version: ${{ needs.config.outputs.rust_version }}
+          manifest-path: generate/Cargo.toml
           profile: minimal
+          version: ${{ needs.config.outputs.rust_version }}
 
-      - uses: "coffeebeats/build-a-proto/.github/actions/cargo-build@v0.2.2"
+      - uses: "coffeebeats/build-a-proto/.github/actions/cargo-build@7d9f999e5744a42cf201a0045c39203295d71ec6"
         with:
           manifest-path: generate/Cargo.toml
           profile: release

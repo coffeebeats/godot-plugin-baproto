@@ -86,7 +86,7 @@ jobs:
             os: windows-latest
 
   release-branch:
-    needs: ["release-please"]
+    needs: ["release-please", "build"]
     if: |
       !failure() && !cancelled() && (
         needs.release-please.outputs.release-created == 'true' ||

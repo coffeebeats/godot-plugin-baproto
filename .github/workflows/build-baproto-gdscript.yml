@@ -97,8 +97,9 @@ jobs:
 
       - uses: "coffeebeats/build-a-proto/.github/actions/cargo-build@b9f774a6775879f4cdc2c55ee1b1e53d55587a5c"
         with:
-          profile: release
+          manifest-path: generate/Cargo.toml
           platform: ${{ inputs.target }}
+          profile: release
           targets: bins
           use_cross: ${{ inputs.use_cross }}
 

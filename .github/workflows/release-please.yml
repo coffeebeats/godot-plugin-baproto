@@ -154,3 +154,10 @@ jobs:
           godot-editor-version: "v${{ steps.version.outputs.semantic }}"
           file-excludes: |
             **/*_test.gd
+
+            AGENTS.md
+            CLAUDE.md
+
+            Cargo.*
+            Cross.toml
+            src

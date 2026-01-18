@@ -1,6 +1,6 @@
-# build-a-proto-godot
+# godot-plugin-baproto
 
-A Godot addon that provides an editor plugin which compiles `build-a-proto` schema files into GDScript.
+A Godot addon that provides an editor plugin which compiles [`build-a-proto`](https://github.com/coffeebeats/build-a-proto) schema files into GDScript.
 
 > [!NOTE]
 > After instantiating a plugin from this repository, be sure to update placeholder text in [plugin.cfg](./plugin.cfg).
@@ -84,11 +84,11 @@ Also update repository settings in GitHub, including:
 
 ## **Version history**
 
-See [CHANGELOG.md](https://github.com/coffeebeats/build-a-proto-godot/blob/main/CHANGELOG.md).
+See [CHANGELOG.md](https://github.com/coffeebeats/godot-plugin-baproto/blob/main/CHANGELOG.md).
 
 ## **License**
 
 > [!IMPORTANT]
 > After instantiating this repository, consider removing this license if the project isn't intended to be open source.
 
-[MIT License](https://github.com/coffeebeats/build-a-proto-godot/blob/main/LICENSE)
+[MIT License](https://github.com/coffeebeats/godot-plugin-baproto/blob/main/LICENSE)

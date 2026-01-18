@@ -104,7 +104,7 @@ jobs:
         if: runner.os != 'Windows'
         run: |
           tar \
-          -C "target/${{ inputs.target }}/release" \
+          -C ".target/${{ inputs.target }}/release" \
           -czf ${{ inputs.archive-name }} \
           "baproto-gdscript"
 
@@ -114,7 +114,7 @@ jobs:
           cat <<- EOM | python3 -c "$(</dev/stdin)"
           from zipfile import ZipFile
           with ZipFile("${{ inputs.archive-name }}", mode="w") as a:
-            a.write("target/${{ inputs.target }}/release/baproto-gdscript.exe", arcname="baproto-gdscript.exe")
+            a.write(".target/${{ inputs.target }}/release/baproto-gdscript.exe", arcname="baproto-gdscript.exe")
           EOM
 
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f

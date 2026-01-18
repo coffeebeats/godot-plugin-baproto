@@ -19,8 +19,9 @@ Godot.exe
 godot.exe
 
 # Rust build artifact ignores
+.target/
 debug/
-target/
+vendor/
 
 # Rustfmt ignores
 **/*.rs.bk

@@ -1,6 +1,6 @@
 [package]
   name         = "baproto-gdscript"
-  version      = "0.1.1"                                                                                                   # x-release-please-version
+  version      = "0.1.2"                                                                                                   # x-release-please-version
   description  = "A Godot addon that provides an editor plugin which compiles `build-a-proto` schema files into GDScript."
   edition      = "2024"
   rust-version = "1.92.0"

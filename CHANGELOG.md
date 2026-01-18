@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.1.2 (2026-01-18)
+
+## What's Changed
+* fix(ci): mark `build` a dependency of `release-branch` by @coffeebeats in https://github.com/coffeebeats/build-a-proto-godot/pull/15
+* fix(generate): increment `generate` crate version alongside plugin by @coffeebeats in https://github.com/coffeebeats/build-a-proto-godot/pull/17
+* fix(ci): package Rust separately when publishing by @coffeebeats in https://github.com/coffeebeats/build-a-proto-godot/pull/18
+* refactor(generate): migrate `generate` crate into repository root by @coffeebeats in https://github.com/coffeebeats/build-a-proto-godot/pull/19
+* fix(ci): use correct target directory when compiling by @coffeebeats in https://github.com/coffeebeats/build-a-proto-godot/pull/21
+
+
+**Full Changelog**: https://github.com/coffeebeats/build-a-proto-godot/compare/v0.1.1...v0.1.2
+
 ## 0.1.1 (2026-01-17)
 
 ## What's Changed

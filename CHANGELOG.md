@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.1.4 (2026-01-18)
+
+## What's Changed
+* chore: rename repository to `godot-plugin-baproto` by @coffeebeats in https://github.com/coffeebeats/godot-plugin-baproto/pull/24
+* fix(ci): omit Rust source when packaging addon by @coffeebeats in https://github.com/coffeebeats/godot-plugin-baproto/pull/26
+* chore(docs): update plugin name and description by @coffeebeats in https://github.com/coffeebeats/godot-plugin-baproto/pull/27
+
+
+**Full Changelog**: https://github.com/coffeebeats/godot-plugin-baproto/compare/v0.1.3...v0.1.4
+
 ## 0.1.3 (2026-01-18)
 
 ## What's Changed

@@ -2,9 +2,6 @@
 
 A Godot addon that provides an editor plugin which compiles [`build-a-proto`](https://github.com/coffeebeats/build-a-proto) schema files into GDScript.
 
-> [!NOTE]
-> After instantiating a plugin from this repository, be sure to update placeholder text in [plugin.cfg](./plugin.cfg).
-
 ## Usage
 
 ### Add as a dependency
@@ -63,24 +60,6 @@ When submitting code for review, ensure the following requirements are met:
 ## **Releasing**
 
 [Semantic Versioning](http://semver.org/) is used for versioning and [Conventional Commits](https://www.conventionalcommits.org/) is used for commit messages. A [release-please](https://github.com/googleapis/release-please) integration via [GitHub Actions](https://github.com/googleapis/release-please-action) automates releases.
-
-### Secrets
-
-After instantiating a project from this template repository, the default GitHub actions and workflows require the following repository secrets to be set:
-
-- `ACTIONS_BOT_TOKEN` - If desired, create a PAT for GitHub actions to use when checking a project; allows fix-formatting commits to trigger actions.
-
-### Customization
-
-In addition to [Secrets](#secrets), the following files should be customized for the instantiated repository:
-
-- [plugin.cfg](./plugin.cfg) - update the title, description, and other properties of the plugin configuration file.
-- [.github/workflows/release-please.yml](.github/workflows/release-please.yml) - ensure the project is correctly packaged into an addon.
-
-Also update repository settings in GitHub, including:
-
-- General repository features
-- Branch protection for `main` and `godot-v4.*` release branches
 
 ## **Version history**
 

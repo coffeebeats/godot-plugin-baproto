@@ -121,7 +121,6 @@ jobs:
             --all-features \
             --all-targets \
             --no-deps \
-            --target-dir=generate/target \
             --target=x86_64-unknown-linux-gnu \
             -- \
               --deny=warnings
@@ -151,5 +150,4 @@ jobs:
             --all-targets \
             --frozen \
             --profile=release \
-            --target-dir=generate/target \
             --target=x86_64-unknown-linux-gnu

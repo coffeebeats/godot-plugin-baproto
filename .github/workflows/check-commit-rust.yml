@@ -26,7 +26,7 @@ jobs:
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
 
-      - uses: "coffeebeats/build-a-proto/.github/actions/parse-rust-version@e194a2077f0617bd05004cc81ea5098ee2cb1cf7"
+      - uses: "coffeebeats/build-a-proto/.github/actions/parse-rust-version@e098f15abaa6b8d43e3d65fc28687edae1bcf3a5"
         id: rust
 
   build:
@@ -38,12 +38,12 @@ jobs:
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
 
-      - uses: "coffeebeats/build-a-proto/.github/actions/setup-rust@e194a2077f0617bd05004cc81ea5098ee2cb1cf7"
+      - uses: "coffeebeats/build-a-proto/.github/actions/setup-rust@e098f15abaa6b8d43e3d65fc28687edae1bcf3a5"
         with:
           version: ${{ needs.config.outputs.rust_version }}
           profile: minimal
 
-      - uses: "coffeebeats/build-a-proto/.github/actions/cargo-build@e194a2077f0617bd05004cc81ea5098ee2cb1cf7"
+      - uses: "coffeebeats/build-a-proto/.github/actions/cargo-build@e098f15abaa6b8d43e3d65fc28687edae1bcf3a5"
         with:
           profile: release
           target-dir: .target
@@ -67,7 +67,7 @@ jobs:
           # Use a PAT so that GitHub Actions will trigger on the resulting commit.
           token: ${{ secrets.GHA_TOKEN }}
 
-      - uses: "coffeebeats/build-a-proto/.github/actions/setup-rust@e194a2077f0617bd05004cc81ea5098ee2cb1cf7"
+      - uses: "coffeebeats/build-a-proto/.github/actions/setup-rust@e098f15abaa6b8d43e3d65fc28687edae1bcf3a5"
         id: setup-rust
         with:
           components: rustfmt
@@ -107,7 +107,7 @@ jobs:
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
 
-      - uses: "coffeebeats/build-a-proto/.github/actions/setup-rust@e194a2077f0617bd05004cc81ea5098ee2cb1cf7"
+      - uses: "coffeebeats/build-a-proto/.github/actions/setup-rust@e098f15abaa6b8d43e3d65fc28687edae1bcf3a5"
         with:
           components: clippy
           profile: minimal
@@ -135,12 +135,12 @@ jobs:
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
 
-      - uses: "coffeebeats/build-a-proto/.github/actions/setup-rust@e194a2077f0617bd05004cc81ea5098ee2cb1cf7"
+      - uses: "coffeebeats/build-a-proto/.github/actions/setup-rust@e098f15abaa6b8d43e3d65fc28687edae1bcf3a5"
         with:
           profile: minimal
           version: ${{ needs.config.outputs.rust_version }}
 
-      - uses: "coffeebeats/build-a-proto/.github/actions/cargo-build@e194a2077f0617bd05004cc81ea5098ee2cb1cf7"
+      - uses: "coffeebeats/build-a-proto/.github/actions/cargo-build@e098f15abaa6b8d43e3d65fc28687edae1bcf3a5"
         with:
           profile: release
           target-dir: .target

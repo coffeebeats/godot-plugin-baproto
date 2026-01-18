@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.3 (2026-01-18)
+
+## What's Changed
+* fix(ci): ignore correct target directory; upgrade `build-a-proto` actions versions by @coffeebeats in https://github.com/coffeebeats/build-a-proto-godot/pull/22
+
+
+**Full Changelog**: https://github.com/coffeebeats/build-a-proto-godot/compare/v0.1.2...v0.1.3
+
 ## 0.1.2 (2026-01-18)
 
 ## What's Changed

@@ -1,8 +1,6 @@
 extends "res://addons/gut/test.gd"
 
-
 const Bitstream := preload("res://runtime.gd")
-
 
 # ---------------------------------------------------------------------------- #
 #                           Tests: ZigZag Encoding                             #

@@ -8,8 +8,8 @@
 
 class_name BitStream
 
-
 # -- PUBLIC METHODS ------------------------------------------------------------------ #
+
 
 ## `zigzag_encode` converts a signed integer to an unsigned ZigZag-encoded value. ZigZag
 ## encoding maps negative numbers to odd numbers and positive numbers to even numbers.
@@ -19,12 +19,15 @@ static func zigzag_encode(value: int) -> int:
 
 ## `zigzag_decode` converts a ZigZag-encoded value back to a signed integer.
 static func zigzag_decode(value: int) -> int:
-	return ((value >> 1) ^ (- (value & 1)))
+	return (value >> 1) ^ (-(value & 1))
+
 
 # -- DEFINITIONS: _Base -------------------------------------------------------------- #
 
+
 ## `_Base` provides shared state and utilities for bit streams.
-class _Base extends RefCounted:
+class _Base:
+	extends RefCounted
 	## `VARINT_BYTES_MAX` is the maximum byte count for a LEB128 varint (64 bit
 	## value).
 	const VARINT_BYTES_MAX := 10
@@ -40,11 +43,13 @@ class _Base extends RefCounted:
 	func capacity() -> int:
 		return _buffer.size() * 8
 
+
 # -- DEFINITIONS: Reader ------------------------------------------------------------- #
 
 
 ## `Reader` is a bit-level binary reader with error tracking.
-class Reader extends _Base:
+class Reader:
+	extends _Base
 	## Error state for read operations.
 	var _error: Error = OK
 
@@ -69,16 +74,14 @@ class Reader extends _Base:
 	func get_error() -> Error:
 		return _error
 
-
 	## `is_at_end` returns true if all bits have been read.
 	func is_at_end() -> bool:
 		return _position >= capacity()
 
-
 	## `is_valid` returns true if no error has occurred.
 	func is_valid() -> bool:
 		return _error == OK
-	
+
 	## `_set_error` sets the error state if not already set.
 	func _set_error(err: Error) -> void:
 		if _error == OK:
@@ -282,7 +285,8 @@ class Reader extends _Base:
 
 
 ## `Writer` is a bit-level binary writer with dynamic buffer growth.
-class Writer extends _Base:
+class Writer:
+	extends _Base
 	## Initial buffer size in bytes.
 	const INITIAL_BUFFER_SIZE := 64
 
@@ -295,7 +299,7 @@ class Writer extends _Base:
 	func _ensure_capacity(bits_needed: int) -> void:
 		var total_bits := _position + bits_needed
 		@warning_ignore("INTEGER_DIVISION")
-		var bytes_needed := (total_bits + 7) / 8 # Ceiling division
+		var bytes_needed := (total_bits + 7) / 8  # Ceiling division
 		if bytes_needed > _buffer.size():
 			var new_size := _buffer.size()
 			while new_size < bytes_needed:
@@ -340,7 +344,10 @@ class Writer extends _Base:
 			var bits_to_write := val & mask
 
 			# Clear target bits and write new value
-			_buffer[byte_index] = (_buffer[byte_index] & ~(mask << bit_offset)) | (bits_to_write << bit_offset)
+			_buffer[byte_index] = (
+				(_buffer[byte_index] & ~(mask << bit_offset))
+				| (bits_to_write << bit_offset)
+			)
 
 			val >>= bits_in_byte
 			_position += bits_in_byte

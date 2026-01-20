@@ -19,7 +19,7 @@ static func zigzag_encode(value: int) -> int:
 
 ## `zigzag_decode` converts a ZigZag-encoded value back to a signed integer.
 static func zigzag_decode(value: int) -> int:
-	return (value >> 1) ^ (- (value & 1))
+	return (value >> 1) ^ (-(value & 1))
 
 
 # -- DEFINITIONS: _Base -------------------------------------------------------------- #
@@ -289,7 +289,7 @@ class Writer:
 	func _ensure_capacity(bits_needed: int) -> void:
 		var total_bits := _position + bits_needed
 		@warning_ignore("INTEGER_DIVISION")
-		var bytes_needed := (total_bits + 7) / 8 # Ceiling division
+		var bytes_needed := (total_bits + 7) / 8  # Ceiling division
 		if bytes_needed > _buffer.size():
 			var old_size := _buffer.size()
 			var new_size := old_size

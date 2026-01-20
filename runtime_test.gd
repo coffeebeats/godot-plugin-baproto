@@ -104,8 +104,8 @@ func test_write_read_bits_cross_byte_boundary():
 	# Given: A writer.
 	var writer := Bitstream.Writer.new()
 	# When: Writing bits that cross byte boundaries.
-	writer.write_bits(0b111, 3) # First 3 bits
-	writer.write_bits(0x1FF, 9) # Next 9 bits cross byte boundary
+	writer.write_bits(0b111, 3)  # First 3 bits
+	writer.write_bits(0x1FF, 9)  # Next 9 bits cross byte boundary
 	var data := writer.to_bytes()
 	# Then: Reading returns correct values.
 	var reader := Bitstream.Reader.new(data)
@@ -308,8 +308,8 @@ func test_write_read_i64():
 	var writer := Bitstream.Writer.new()
 	# When: Writing i64 edge values.
 	writer.write_i64(0)
-	writer.write_i64(9223372036854775807) # Max i64
-	writer.write_i64(-9223372036854775808) # Min i64
+	writer.write_i64(9223372036854775807)  # Max i64
+	writer.write_i64(-9223372036854775808)  # Min i64
 	writer.write_i64(-1)
 	var data := writer.to_bytes()
 	# Then: Reading returns correct signed values.
@@ -463,7 +463,7 @@ func test_write_read_varint_unsigned_large():
 	# Given: A writer.
 	var writer := Bitstream.Writer.new()
 	# When: Writing a large value.
-	var large_val := 0x7FFFFFFFFFFFFFFF # Max positive int64
+	var large_val := 0x7FFFFFFFFFFFFFFF  # Max positive int64
 	writer.write_varint_unsigned(large_val)
 	var data := writer.to_bytes()
 	# Then: Reading returns the same value.
@@ -511,8 +511,8 @@ func test_write_read_varint_signed_negative():
 func test_varint_byte_alignment():
 	# Given: A writer with bits before a varint.
 	var writer := Bitstream.Writer.new()
-	writer.write_bits(0b101, 3) # 3 bits, not byte-aligned
-	writer.write_varint_unsigned(300) # Should align first
+	writer.write_bits(0b101, 3)  # 3 bits, not byte-aligned
+	writer.write_varint_unsigned(300)  # Should align first
 	var data := writer.to_bytes()
 	# When: Reading with the same pattern.
 	var reader := Bitstream.Reader.new(data)
@@ -588,7 +588,7 @@ func test_write_read_string_empty():
 func test_write_read_string_unicode():
 	# Given: A writer and a Unicode string.
 	var writer := Bitstream.Writer.new()
-	var original := "Hello, \u4e16\u754c! \U0001F600" # "Hello, 世界! 😀"
+	var original := "Hello, \u4e16\u754c! \U0001F600"  # "Hello, 世界! 😀"
 	# When: Writing and reading the Unicode string.
 	writer.write_string(original)
 	var data := writer.to_bytes()
@@ -602,7 +602,7 @@ func test_write_read_string_unicode():
 func test_bytes_byte_alignment():
 	# Given: A writer with bits before bytes.
 	var writer := Bitstream.Writer.new()
-	writer.write_bits(0b1111, 4) # 4 bits, not byte-aligned
+	writer.write_bits(0b1111, 4)  # 4 bits, not byte-aligned
 	writer.write_bytes(PackedByteArray([0xAB, 0xCD]))
 	var data := writer.to_bytes()
 	# When: Reading with the same pattern.
@@ -657,8 +657,8 @@ func test_error_persistence():
 	# Given: A reader that will error.
 	var reader := Bitstream.Reader.new(PackedByteArray([0xFF]))
 	# When: Triggering an error then reading more.
-	reader.read_bits(16) # Error
-	var result := reader.read_bits(8) # Subsequent read
+	reader.read_bits(16)  # Error
+	var result := reader.read_bits(8)  # Subsequent read
 	# Then: Error persists and returns default.
 	assert_eq(result, 0)
 	assert_false(reader.is_valid())
@@ -900,7 +900,7 @@ func test_roundtrip_nested_messages_pattern():
 	# Given: A pattern simulating nested message encoding.
 	var writer := Bitstream.Writer.new()
 	# Outer message header
-	writer.write_varint_unsigned(2) # Message type
+	writer.write_varint_unsigned(2)  # Message type
 	# Inner message 1
 	writer.write_bool(true)
 	writer.write_bits(255, 8)

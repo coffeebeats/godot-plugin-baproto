@@ -23,11 +23,7 @@ func test_zigzag_encode_zero():
 	assert_eq(encoded, 0)
 
 
-func test_zigzag_encode_positive(params = use_parameters([
-	[1, 2],
-	[2, 4],
-	[100, 200]
-])):
+func test_zigzag_encode_positive(params = use_parameters([[1, 2], [2, 4], [100, 200]])):
 	# Given: A positive integer.
 	var input: int = params[0]
 	var expected: int = params[1]
@@ -39,11 +35,9 @@ func test_zigzag_encode_positive(params = use_parameters([
 	assert_eq(encoded, expected)
 
 
-func test_zigzag_encode_negative(params = use_parameters([
-	[-1, 1],
-	[-2, 3],
-	[-100, 199]
-])):
+func test_zigzag_encode_negative(
+	params = use_parameters([[-1, 1], [-2, 3], [-100, 199]])
+):
 	# Given: A negative integer.
 	var input: int = params[0]
 	var expected: int = params[1]
@@ -138,8 +132,8 @@ func test_write_read_bits_cross_byte_boundary():
 	var writer := Bitstream.Writer.new()
 
 	# When: Writing bits that cross byte boundaries.
-	writer.write_bits(0b111, 3) # First 3 bits
-	writer.write_bits(0x1FF, 9) # Next 9 bits cross byte boundary
+	writer.write_bits(0b111, 3)  # First 3 bits
+	writer.write_bits(0x1FF, 9)  # Next 9 bits cross byte boundary
 	var data := writer.to_bytes()
 
 	# Then: Reading returns correct values.
@@ -362,8 +356,8 @@ func test_write_read_i64():
 
 	# When: Writing i64 edge values.
 	writer.write_i64(0)
-	writer.write_i64(9223372036854775807) # Max i64
-	writer.write_i64(-9223372036854775808) # Min i64
+	writer.write_i64(9223372036854775807)  # Max i64
+	writer.write_i64(-9223372036854775808)  # Min i64
 	writer.write_i64(-1)
 	var data := writer.to_bytes()
 
@@ -488,11 +482,9 @@ func test_write_read_f64_negative_zero():
 # -- TESTS: Varints ------------------------------------------------------------------ #
 
 
-func test_write_read_varint_unsigned_single_byte(params = use_parameters([
-	[0],
-	[1],
-	[127]
-])):
+func test_write_read_varint_unsigned_single_byte(
+	params = use_parameters([[0], [1], [127]])
+):
 	# Given: A writer.
 	var writer := Bitstream.Writer.new()
 	var value: int = params[0]
@@ -532,7 +524,7 @@ func test_write_read_varint_unsigned_large():
 	var writer := Bitstream.Writer.new()
 
 	# When: Writing a large value.
-	var large_val := 0x7FFFFFFFFFFFFFFF # Max positive int64
+	var large_val := 0x7FFFFFFFFFFFFFFF  # Max positive int64
 	writer.write_varint_unsigned(large_val)
 	var data := writer.to_bytes()
 
@@ -585,8 +577,8 @@ func test_write_read_varint_signed_negative():
 func test_varint_byte_alignment():
 	# Given: A writer with bits before a varint.
 	var writer := Bitstream.Writer.new()
-	writer.write_bits(0b101, 3) # 3 bits, not byte-aligned
-	writer.write_varint_unsigned(300) # Should align first
+	writer.write_bits(0b101, 3)  # 3 bits, not byte-aligned
+	writer.write_varint_unsigned(300)  # Should align first
 	var data := writer.to_bytes()
 
 	# When: Reading with the same pattern.
@@ -670,7 +662,7 @@ func test_write_read_string_empty():
 func test_write_read_string_unicode():
 	# Given: A writer and a Unicode string.
 	var writer := Bitstream.Writer.new()
-	var original := "Hello, \u4e16\u754c! \U0001F600" # "Hello, 世界! 😀"
+	var original := "Hello, \u4e16\u754c! \U0001F600"  # "Hello, 世界! 😀"
 
 	# When: Writing and reading the Unicode string.
 	writer.write_string(original)
@@ -686,7 +678,7 @@ func test_write_read_string_unicode():
 func test_bytes_byte_alignment():
 	# Given: A writer with bits before bytes.
 	var writer := Bitstream.Writer.new()
-	writer.write_bits(0b1111, 4) # 4 bits, not byte-aligned
+	writer.write_bits(0b1111, 4)  # 4 bits, not byte-aligned
 	writer.write_bytes(PackedByteArray([0xAB, 0xCD]))
 	var data := writer.to_bytes()
 
@@ -748,8 +740,8 @@ func test_error_persistence():
 	var reader := Bitstream.Reader.new(PackedByteArray([0xFF]))
 
 	# When: Triggering an error then reading more.
-	reader.read_bits(16) # Error
-	var result := reader.read_bits(8) # Subsequent read
+	reader.read_bits(16)  # Error
+	var result := reader.read_bits(8)  # Subsequent read
 
 	# Then: Error persists and returns default.
 	assert_eq(result, 0)
@@ -1024,7 +1016,7 @@ func test_roundtrip_nested_messages_pattern():
 	var writer := Bitstream.Writer.new()
 
 	# Outer message header.
-	writer.write_varint_unsigned(2) # Message type
+	writer.write_varint_unsigned(2)  # Message type
 
 	# Inner message 1.
 	writer.write_bool(true)

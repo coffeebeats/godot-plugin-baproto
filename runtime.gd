@@ -19,7 +19,7 @@ static func zigzag_encode(value: int) -> int:
 
 ## `zigzag_decode` converts a ZigZag-encoded value back to a signed integer.
 static func zigzag_decode(value: int) -> int:
-	return (value >> 1) ^ (-(value & 1))
+	return (value >> 1) ^ (- (value & 1))
 
 
 # -- DEFINITIONS: _Base -------------------------------------------------------------- #
@@ -159,17 +159,6 @@ class Reader:
 	func read_u32() -> int:
 		return read_bits(32)
 
-	## `read_u64` reads an unsigned 64-bit integer.
-	##
-	## NOTE: Values > 2^63-1 will appear as negative in GDScript.
-	func read_u64() -> int:
-		assert(
-			false,
-			"unsupported; GDScript does not support unsigned 64-bit integers.",
-		)
-
-		return read_bits(64)
-
 	## `read_i8` reads a signed 8-bit integer (two's complement).
 	func read_i8() -> int:
 		var val := read_bits(8)
@@ -293,18 +282,22 @@ class Writer:
 	func _init() -> void:
 		_buffer = PackedByteArray()
 		_buffer.resize(INITIAL_BUFFER_SIZE)
+		_buffer.fill(0)
 		_position = 0
 
 	## `_ensure_capacity` grows the buffer if needed to fit additional bits.
 	func _ensure_capacity(bits_needed: int) -> void:
 		var total_bits := _position + bits_needed
 		@warning_ignore("INTEGER_DIVISION")
-		var bytes_needed := (total_bits + 7) / 8  # Ceiling division
+		var bytes_needed := (total_bits + 7) / 8 # Ceiling division
 		if bytes_needed > _buffer.size():
-			var new_size := _buffer.size()
+			var old_size := _buffer.size()
+			var new_size := old_size
 			while new_size < bytes_needed:
 				new_size *= 2
 			_buffer.resize(new_size)
+			for i in range(old_size, new_size):
+				_buffer[i] = 0
 
 	## `_align_to_byte` advances the bit position to the next byte boundary.
 	func _align_to_byte() -> void:
@@ -368,10 +361,6 @@ class Writer:
 	## `write_u32` writes an unsigned 32-bit integer.
 	func write_u32(value: int) -> void:
 		write_bits(value & 0xFFFFFFFF, 32)
-
-	## `write_u64` writes an unsigned 64-bit integer.
-	func write_u64(value: int) -> void:
-		write_bits(value, 64)
 
 	## `write_i8` writes a signed 8-bit integer (two's complement).
 	func write_i8(value: int) -> void:

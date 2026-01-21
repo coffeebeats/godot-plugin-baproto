@@ -13,6 +13,7 @@ const Encoding := preload("./encoding.gd")
 
 # -- PUBLIC METHODS ------------------------------------------------------------------ #
 
+
 ## `write_bool` writes a single bit.
 func write_bool(value: bool) -> void:
 	_ensure_capacity(1)

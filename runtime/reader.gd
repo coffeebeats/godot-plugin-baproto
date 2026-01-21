@@ -169,7 +169,7 @@ func read_varint_unsigned() -> int:
 		if (byte & 0x80) == 0:
 			return result
 
-	_set_error(ERR_INVALID_DATA) # Too long
+	_set_error(ERR_INVALID_DATA)  # Too long
 
 	return 0
 
@@ -207,6 +207,7 @@ func read_string() -> String:
 		return ""
 
 	return utf8.get_string_from_utf8()
+
 
 # -- ENGINE METHODS (OVERRIDES) ------------------------------------------------------ #
 

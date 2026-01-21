@@ -84,6 +84,7 @@ func test_reader_read_bits_invalid_count() -> void:
 	assert_eq(result1, 0)
 	assert_false(reader.is_valid())
 
+
 # -- TEST HOOKS ---------------------------------------------------------------------- #
 
 

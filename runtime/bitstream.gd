@@ -63,6 +63,7 @@ func seek(position: int) -> void:
 
 	_position = position
 
+
 ## `set_data` resets the `BitStream` to the provided `data` array. Any errors or cursor
 ## positioning will be reset.
 func set_data(data: PackedByteArray) -> void:
@@ -76,10 +77,13 @@ func to_bytes() -> PackedByteArray:
 	@warning_ignore("integer_division")
 	return _buffer.slice(0, (_position + 7) / 8)
 
+
 # -- ENGINE METHODS (OVERRIDES) ------------------------------------------------------ #
+
 
 func _init(data: PackedByteArray = PackedByteArray()) -> void:
 	_buffer = data
+
 
 # -- PRIVATE METHODS ----------------------------------------------------------------- #
 
@@ -108,6 +112,7 @@ func _ensure_capacity(capacity: int) -> void:
 
 		for i in range(size_prev, size):
 			_buffer[i] = 0
+
 
 ## `_set_error` sets the error state if not already set.
 func _set_error(err: Error) -> void:

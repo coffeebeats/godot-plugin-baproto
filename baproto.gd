@@ -3,6 +3,7 @@ extends EditorPlugin
 
 const _NAMESPACE := "BAProto"
 
+
 func _enter_tree() -> void:
 	add_autoload_singleton(_NAMESPACE, "res://baproto.gd")
 

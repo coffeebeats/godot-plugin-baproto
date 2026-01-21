@@ -62,6 +62,7 @@ func test_zigzag_roundtrip() -> void:
 		# Then: The original value is recovered.
 		assert_eq(decoded, val, "Roundtrip failed for %d" % val)
 
+
 # -- TEST HOOKS ---------------------------------------------------------------------- #
 
 

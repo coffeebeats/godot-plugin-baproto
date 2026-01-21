@@ -23,7 +23,8 @@ static func zigzag_encode(value: int) -> int:
 
 ## `zigzag_decode` converts a ZigZag-encoded value back to a signed integer.
 static func zigzag_decode(value: int) -> int:
-	return (value >> 1) ^ (- (value & 1))
+	return (value >> 1) ^ (-(value & 1))
+
 
 # -- ENGINE METHODS (OVERRIDES) ------------------------------------------------------ #
 

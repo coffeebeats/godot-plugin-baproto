@@ -11,6 +11,11 @@ extends "./bitstream.gd"
 
 const Encoding := preload("./encoding.gd")
 
+# -- INITIALIZATION ------------------------------------------------------------------ #
+
+static var _f32_bytes := PackedByteArray([0, 0, 0, 0])
+static var _f64_bytes := PackedByteArray([0, 0, 0, 0, 0, 0, 0, 0])
+
 # -- PUBLIC METHODS ------------------------------------------------------------------ #
 
 
@@ -127,29 +132,24 @@ func read_f32() -> float:
 	if _error != OK:
 		return 0.0
 
-	var b := PackedByteArray()
-	b.resize(4)
-	b.encode_u32(0, bits)
-
-	return b.decode_float(0)
+	_f32_bytes.encode_u32(0, bits)
+	return _f32_bytes.decode_float(0)
 
 
 ## `read_f64` reads an IEEE 754 double-precision float.
 func read_f64() -> float:
 	var start := _position
-	var lo := read_bits(32)
-	var hi := read_bits(32)
+
+	var low := read_bits(32)
+	var high := read_bits(32)
 
 	if _error != OK:
 		_position = start
 		return 0.0
 
-	var buf := PackedByteArray()
-	buf.resize(8)
-	buf.encode_u32(0, lo)
-	buf.encode_u32(4, hi)
-
-	return buf.decode_double(0)
+	_f64_bytes.encode_u32(0, low)
+	_f64_bytes.encode_u32(4, high)
+	return _f64_bytes.decode_double(0)
 
 
 ## `read_varint_unsigned` reads an unsigned LEB128 varint.
@@ -188,11 +188,18 @@ func read_bytes(count: int) -> PackedByteArray:
 		_set_error(ERR_FILE_EOF)
 		return PackedByteArray()
 
+	var start := _position
+
 	var result := PackedByteArray()
 	result.resize(count)
 
 	for i in range(count):
 		result[i] = read_bits(8)
+
+		if _error != OK:
+			_position = start
+			result.fill(0)
+			break
 
 	return result
 

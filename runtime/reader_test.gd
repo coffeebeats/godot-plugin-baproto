@@ -142,7 +142,7 @@ func test_reader_f64_eof_restores_position() -> void:
 	assert_eq(reader.get_error(), ERR_FILE_EOF)
 
 	# Then: No data is returned.
-	assert_eq(result, 0)
+	assert_eq(result, 0.0)
 
 	# Then: The cursor position is reset.
 	assert_eq(reader.get_position(), start)

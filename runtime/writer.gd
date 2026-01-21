@@ -122,9 +122,8 @@ func write_f64(value: float) -> void:
 	write_bits(hi, 32)
 
 
-## `write_varint_unsigned` writes an unsigned LEB128 varint (byte-aligned).
+## `write_varint_unsigned` writes an unsigned LEB128 varint.
 func write_varint_unsigned(value: int) -> void:
-	_align_to_byte()
 	var val := value
 	# Handle negative values (treat as large unsigned)
 	if val < 0:
@@ -153,9 +152,8 @@ func write_varint_signed(value: int) -> void:
 	write_varint_unsigned(Encoding.zigzag_encode(value))
 
 
-## `write_bytes` writes raw bytes (byte-aligned).
+## `write_bytes` writes raw bytes.
 func write_bytes(data: PackedByteArray) -> void:
-	_align_to_byte()
 	for i in range(data.size()):
 		write_bits(data[i], 8)
 

@@ -81,8 +81,8 @@ func test_writer_read_bits_cross_byte_boundary() -> void:
 	var writer := Writer.new()
 
 	# When: Writing bits that cross byte boundaries.
-	writer.write_bits(0b111, 3)  # First 3 bits
-	writer.write_bits(0x1FF, 9)  # Next 9 bits cross byte boundary
+	writer.write_bits(0b111, 3) # First 3 bits
+	writer.write_bits(0x1FF, 9) # Next 9 bits cross byte boundary
 	var data := writer.to_bytes()
 
 	# Then: Reading returns correct values.
@@ -251,8 +251,8 @@ func test_writer_read_i64() -> void:
 
 	# When: Writing i64 edge values.
 	writer.write_i64(0)
-	writer.write_i64(9223372036854775807)  # Max i64
-	writer.write_i64(-9223372036854775808)  # Min i64
+	writer.write_i64(9223372036854775807) # Max i64
+	writer.write_i64(-9223372036854775808) # Min i64
 	writer.write_i64(-1)
 	var data := writer.to_bytes()
 
@@ -413,7 +413,7 @@ func test_writer_read_varint_unsigned_large() -> void:
 	var writer := Writer.new()
 
 	# When: Writing a large value.
-	var large_val := 0x7FFFFFFFFFFFFFFF  # Max positive int64
+	var large_val := 0x7FFFFFFFFFFFFFFF # Max positive int64
 	writer.write_varint_unsigned(large_val)
 	var data := writer.to_bytes()
 
@@ -463,11 +463,11 @@ func test_writer_read_varint_signed_negative() -> void:
 	assert_true(reader.is_valid())
 
 
-func test_writer_varint_byte_alignment() -> void:
+func test_writer_varint_alignment() -> void:
 	# Given: A writer with bits before a varint.
 	var writer := Writer.new()
-	writer.write_bits(0b101, 3)  # 3 bits, not byte-aligned
-	writer.write_varint_unsigned(300)  # Should align first
+	writer.write_bits(0b101, 3) # 3 bits, not byte-aligned
+	writer.write_varint_unsigned(300)
 	var data := writer.to_bytes()
 
 	# When: Reading with the same pattern.
@@ -479,6 +479,9 @@ func test_writer_varint_byte_alignment() -> void:
 	assert_eq(bits, 0b101)
 	assert_eq(varint, 300)
 	assert_true(reader.is_valid())
+
+	# Then: Verify no padding was added (3 bits + varint bytes).
+	assert_eq(reader.get_position(), 19) # 3 + 2 * 8 = 19
 
 
 func test_writer_read_bytes() -> void:
@@ -548,7 +551,7 @@ func test_writer_read_string_empty() -> void:
 func test_writer_read_string_unicode() -> void:
 	# Given: A writer and a Unicode string.
 	var writer := Writer.new()
-	var original := "Hello, \u4e16\u754c! \U0001F600"  # "Hello, 世界! 😀"
+	var original := "Hello, \u4e16\u754c! \U0001F600" # "Hello, 世界! 😀"
 
 	# When: Writing and reading the Unicode string.
 	writer.write_string(original)
@@ -561,10 +564,10 @@ func test_writer_read_string_unicode() -> void:
 	assert_true(reader.is_valid())
 
 
-func test_writer_bytes_byte_alignment() -> void:
+func test_writer_bytes_alignment() -> void:
 	# Given: A writer with bits before bytes.
 	var writer := Writer.new()
-	writer.write_bits(0b1111, 4)  # 4 bits, not byte-aligned
+	writer.write_bits(0b1111, 4) # 4 bits, not byte-aligned
 	writer.write_bytes(PackedByteArray([0xAB, 0xCD]))
 	var data := writer.to_bytes()
 
@@ -577,6 +580,9 @@ func test_writer_bytes_byte_alignment() -> void:
 	assert_eq(bits, 0b1111)
 	assert_eq(bytes, PackedByteArray([0xAB, 0xCD]))
 	assert_true(reader.is_valid())
+
+	# Then: Verify no padding was added.
+	assert_eq(reader.get_position(), 20) # 4 + 2 * 8 = 20
 
 
 func test_writer_roundtrip_mixed_types() -> void:
@@ -638,7 +644,7 @@ func test_writer_roundtrip_nested_messages_pattern() -> void:
 	var writer := Writer.new()
 
 	# Outer message header.
-	writer.write_varint_unsigned(2)  # Message type
+	writer.write_varint_unsigned(2) # Message type
 
 	# Inner message 1.
 	writer.write_bool(true)

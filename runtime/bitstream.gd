@@ -88,13 +88,6 @@ func _init(data: PackedByteArray = PackedByteArray()) -> void:
 # -- PRIVATE METHODS ----------------------------------------------------------------- #
 
 
-## `_align_to_byte` advances the bit position to the next byte boundary.
-func _align_to_byte() -> void:
-	if _position % 8 != 0:
-		@warning_ignore("integer_division")
-		_position = ((_position + 7) / 8) * 8
-
-
 ## `_ensure_capacity` grows the buffer, if needed, to fit additional capacity.
 func _ensure_capacity(capacity: int) -> void:
 	var total := _position + capacity

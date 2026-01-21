@@ -150,10 +150,8 @@ func read_f64() -> float:
 	return buf.decode_double(0)
 
 
-## `read_varint_unsigned` reads an unsigned LEB128 varint (byte-aligned).
+## `read_varint_unsigned` reads an unsigned LEB128 varint.
 func read_varint_unsigned() -> int:
-	_align_to_byte()
-
 	var result := 0
 	var shift := 0
 
@@ -179,10 +177,8 @@ func read_varint_signed() -> int:
 	return Encoding.zigzag_decode(read_varint_unsigned())
 
 
-## `read_bytes` reads the specified number of raw bytes (byte-aligned).
+## `read_bytes` reads the specified number of raw bytes.
 func read_bytes(count: int) -> PackedByteArray:
-	_align_to_byte()
-
 	if not can_read_bytes(count):
 		_set_error(ERR_FILE_EOF)
 		return PackedByteArray()

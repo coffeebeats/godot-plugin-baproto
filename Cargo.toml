@@ -11,7 +11,7 @@
 
 [dependencies]
   anyhow     = "1.0.100"
-  baproto    = {git = "https://github.com/coffeebeats/build-a-proto.git", rev = "bb682c1abdcdb324ecbdfdc484ab76788ab1c905"}
+  baproto    = {git = "https://github.com/coffeebeats/build-a-proto.git", rev = "97e540df3e6b82e900004e48a6b0e99d024bdab8"}
   clap       = {version = "4.5.53", features = ["derive"]}
   serde      = {version = "1.0.228", features = ["derive"]}
   serde_json = "1.0.149"

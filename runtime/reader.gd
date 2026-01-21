@@ -136,10 +136,12 @@ func read_f32() -> float:
 
 ## `read_f64` reads an IEEE 754 double-precision float.
 func read_f64() -> float:
+	var start := _position
 	var lo := read_bits(32)
 	var hi := read_bits(32)
 
 	if _error != OK:
+		_position = start
 		return 0.0
 
 	var buf := PackedByteArray()
@@ -152,11 +154,13 @@ func read_f64() -> float:
 
 ## `read_varint_unsigned` reads an unsigned LEB128 varint.
 func read_varint_unsigned() -> int:
+	var start := _position
 	var result := 0
 	var shift := 0
 
 	for i in range(Encoding.VARINT_BYTES_MAX):
 		if not can_read_bits(8):
+			_position = start
 			_set_error(ERR_FILE_EOF)
 			return 0
 
@@ -167,6 +171,7 @@ func read_varint_unsigned() -> int:
 		if (byte & 0x80) == 0:
 			return result
 
+	_position = start
 	_set_error(ERR_INVALID_DATA)  # Too long
 
 	return 0
@@ -194,12 +199,14 @@ func read_bytes(count: int) -> PackedByteArray:
 
 ## `read_string` reads a varint-prefixed UTF-8 string (byte-aligned).
 func read_string() -> String:
+	var start := _position
 	var size := read_varint_unsigned()
 	if _error != OK:
 		return ""
 
 	var utf8 := read_bytes(size)
 	if _error != OK:
+		_position = start
 		return ""
 
 	return utf8.get_string_from_utf8()

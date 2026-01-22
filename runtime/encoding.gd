@@ -30,7 +30,4 @@ static func zigzag_decode(value: int) -> int:
 
 
 func _init() -> void:
-	assert(
-		false,
-		"Invalid config; this 'Object' should not be instantiated!"
-	)
+	assert(false, "Invalid config; this 'Object' should not be instantiated!")

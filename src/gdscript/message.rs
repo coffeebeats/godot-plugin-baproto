@@ -242,14 +242,52 @@ fn write_private_methods_section<W: Writer>(
 fn gen_decode_field(field_name: &str, encoding: &Encoding) -> anyhow::Result<Vec<String>> {
     let mut stmts = Vec::new();
 
-    // For message types, instantiate first then decode.
-    if matches!(encoding.native, NativeType::Message { .. }) {
-        let type_str = type_name(&encoding.native);
-        stmts.push(format!("{} = {}.new()", field_name, type_str));
-        stmts.push(format!("{}._decode(_reader)", field_name));
-    } else {
-        let decode_expr = gen_decode_value(encoding)?;
-        stmts.push(format!("{} = {}", field_name, decode_expr));
+    match &encoding.native {
+        NativeType::Message { .. } => {
+            let type_str = type_name(&encoding.native);
+            stmts.push(format!("{} = {}.new()", field_name, type_str));
+            stmts.push(format!("{}._decode(_reader)", field_name));
+        }
+
+        NativeType::Array { element } => {
+            stmts.push(format!("{} = []", field_name));
+            stmts.push(format!("var _len := _reader.read_varint_unsigned()"));
+            stmts.push("for _i in range(_len):".to_string());
+
+            if matches!(element.native, NativeType::Message { .. }) {
+                let type_str = type_name(&element.native);
+                stmts.push(format!("\tvar _item := {}.new()", type_str));
+                stmts.push("\t_item._decode(_reader)".to_string());
+                stmts.push(format!("\t{}.append(_item)", field_name));
+            } else {
+                let item_expr = gen_decode_value(element)?;
+                stmts.push(format!("\t{}.append({})", field_name, item_expr));
+            }
+        }
+
+        NativeType::Map { key, value } => {
+            stmts.push(format!("{} = {{}}", field_name));
+            stmts.push(format!("var _len := _reader.read_varint_unsigned()"));
+            stmts.push("for _i in range(_len):".to_string());
+
+            let key_expr = gen_decode_value(key)?;
+            stmts.push(format!("\tvar _key := {}", key_expr));
+
+            if matches!(value.native, NativeType::Message { .. }) {
+                let type_str = type_name(&value.native);
+                stmts.push(format!("\tvar _val := {}.new()", type_str));
+                stmts.push("\t_val._decode(_reader)".to_string());
+                stmts.push(format!("\t{}[_key] = _val", field_name));
+            } else {
+                let val_expr = gen_decode_value(value)?;
+                stmts.push(format!("\t{}[_key] = {}", field_name, val_expr));
+            }
+        }
+
+        _ => {
+            let decode_expr = gen_decode_value(encoding)?;
+            stmts.push(format!("{} = {}", field_name, decode_expr));
+        }
     }
 
     Ok(stmts)
@@ -407,57 +445,10 @@ fn gen_decode_value(encoding: &Encoding) -> anyhow::Result<String> {
             "_reader.read_bytes(_reader.read_varint_unsigned())".to_string()
         }
 
-        // Array type.
-        (WireFormat::LengthPrefixed { .. }, NativeType::Array { element }) => {
-            let mut parts = vec![
-                "(func():".to_string(),
-                "\tvar _arr := []".to_string(),
-                "\tvar _len := _reader.read_varint_unsigned()".to_string(),
-                "\tfor _i in range(_len):".to_string(),
-            ];
-
-            // Handle message types specially in arrays.
-            if matches!(element.native, NativeType::Message { .. }) {
-                let type_str = type_name(&element.native);
-                parts.push(format!("\t\tvar _item := {}.new()", type_str));
-                parts.push("\t\t_item._decode(_reader)".to_string());
-                parts.push("\t\t_arr.append(_item)".to_string());
-            } else {
-                let item_expr = gen_decode_value(element)?;
-                parts.push(format!("\t\t_arr.append({})", item_expr));
-            }
-
-            parts.push("\treturn _arr".to_string());
-            parts.push(").call()".to_string());
-            parts.join("\n")
-        }
-
-        // Map type.
-        (WireFormat::LengthPrefixed { .. }, NativeType::Map { key, value }) => {
-            let mut parts = vec![
-                "(func():".to_string(),
-                "\tvar _map := {}".to_string(),
-                "\tvar _len := _reader.read_varint_unsigned()".to_string(),
-                "\tfor _i in range(_len):".to_string(),
-            ];
-
-            let key_expr = gen_decode_value(key)?;
-            parts.push(format!("\t\tvar _key := {}", key_expr));
-
-            // Handle message types specially in maps.
-            if matches!(value.native, NativeType::Message { .. }) {
-                let type_str = type_name(&value.native);
-                parts.push(format!("\t\tvar _val := {}.new()", type_str));
-                parts.push("\t\t_val._decode(_reader)".to_string());
-                parts.push("\t\t_map[_key] = _val".to_string());
-            } else {
-                let val_expr = gen_decode_value(value)?;
-                parts.push(format!("\t\t_map[_key] = {}", val_expr));
-            }
-
-            parts.push("\treturn _map".to_string());
-            parts.push(").call()".to_string());
-            parts.join("\n")
+        (_, NativeType::Array { .. }) | (_, NativeType::Map { .. }) => {
+            return Err(anyhow::anyhow!(
+                "Array/Map decode should be handled in gen_decode_field"
+            ));
         }
 
         // Bool type.
@@ -969,6 +960,81 @@ mod tests {
         // Then: Output should contain assignment with read call.
         assert_eq!(stmts.len(), 1);
         assert_eq!(stmts[0], "count = _reader.read_u32()");
+    }
+
+    #[test]
+    fn test_gen_decode_field_array() {
+        // Given: An array field encoding.
+        let encoding = Encoding {
+            wire: WireFormat::LengthPrefixed { prefix_bits: 16 },
+            native: NativeType::Array {
+                element: Box::new(Encoding {
+                    wire: WireFormat::Bits { count: 32 },
+                    native: NativeType::Int {
+                        bits: 32,
+                        signed: false,
+                    },
+                    transforms: vec![],
+                    padding_bits: None,
+                }),
+            },
+            transforms: vec![],
+            padding_bits: None,
+        };
+
+        // When: Generating decode statements for a field.
+        let stmts = gen_decode_field("scores", &encoding).unwrap();
+
+        // Then: Output should contain sequential code without inline lambda.
+        assert_eq!(stmts.len(), 4);
+        assert_eq!(stmts[0], "scores = []");
+        assert_eq!(stmts[1], "var _len := _reader.read_varint_unsigned()");
+        assert_eq!(stmts[2], "for _i in range(_len):");
+        assert_eq!(stmts[3], "\tscores.append(_reader.read_u32())");
+        // Verify no inline lambda patterns.
+        assert!(!stmts.join("\n").contains("(func():"));
+        assert!(!stmts.join("\n").contains(").call()"));
+    }
+
+    #[test]
+    fn test_gen_decode_field_map() {
+        // Given: A map field encoding.
+        let encoding = Encoding {
+            wire: WireFormat::LengthPrefixed { prefix_bits: 16 },
+            native: NativeType::Map {
+                key: Box::new(Encoding {
+                    wire: WireFormat::LengthPrefixed { prefix_bits: 16 },
+                    native: NativeType::String,
+                    transforms: vec![],
+                    padding_bits: None,
+                }),
+                value: Box::new(Encoding {
+                    wire: WireFormat::Bits { count: 32 },
+                    native: NativeType::Int {
+                        bits: 32,
+                        signed: true,
+                    },
+                    transforms: vec![],
+                    padding_bits: None,
+                }),
+            },
+            transforms: vec![],
+            padding_bits: None,
+        };
+
+        // When: Generating decode statements for a field.
+        let stmts = gen_decode_field("attributes", &encoding).unwrap();
+
+        // Then: Output should contain sequential code without inline lambda.
+        assert_eq!(stmts.len(), 5);
+        assert_eq!(stmts[0], "attributes = {}");
+        assert_eq!(stmts[1], "var _len := _reader.read_varint_unsigned()");
+        assert_eq!(stmts[2], "for _i in range(_len):");
+        assert_eq!(stmts[3], "\tvar _key := _reader.read_string()");
+        assert_eq!(stmts[4], "\tattributes[_key] = _reader.read_i32()");
+        // Verify no inline lambda patterns.
+        assert!(!stmts.join("\n").contains("(func():"));
+        assert!(!stmts.join("\n").contains(").call()"));
     }
 
     /* ---------------- Tests: write_private_methods_section ---------------- */

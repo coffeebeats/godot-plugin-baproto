@@ -143,10 +143,8 @@ fn write_engine_methods_section<W: Writer>(
 mod tests {
     use super::*;
     use crate::gdscript::collect::TypeKind;
-    use baproto::{
-        CodeWriterBuilder, DescriptorBuilder, Encoding, Message, NativeType, PackageName,
-        WireFormat,
-    };
+    use crate::gdscript::tests::create_code_writer;
+    use baproto::{DescriptorBuilder, Encoding, Message, NativeType, PackageName, WireFormat};
 
     /* ---------------------- Tests: generate_namespace --------------------- */
 
@@ -338,16 +336,5 @@ mod tests {
         assert!(result.contains("const game := preload(\"./game/mod.gd\")"));
         assert!(result.contains("const ui := preload(\"./ui/mod.gd\")"));
         assert!(result.contains("root namespace is non-instantiable"));
-    }
-
-    /* ----------------------- Fn: create_code_writer ----------------------- */
-
-    fn create_code_writer() -> CodeWriter {
-        CodeWriterBuilder::default()
-            .comment_token("##".to_owned())
-            .indent_token("\t".to_owned())
-            .newline_token("\n".to_owned())
-            .build()
-            .unwrap()
     }
 }

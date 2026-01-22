@@ -168,16 +168,8 @@ fn write_public_methods_section<W: Writer>(cw: &mut CodeWriter, w: &mut W) -> an
 #[cfg(test)]
 mod tests {
     use super::*;
-    use baproto::{CodeWriterBuilder, Encoding, NativeType, WireFormat};
-
-    fn create_code_writer() -> CodeWriter {
-        CodeWriterBuilder::default()
-            .comment_token("##".to_owned())
-            .indent_token("\t".to_owned())
-            .newline_token("\n".to_owned())
-            .build()
-            .unwrap()
-    }
+    use crate::gdscript::tests::create_code_writer;
+    use baproto::{Encoding, NativeType, WireFormat};
 
     /* ------------------------ Tests: generate_message ----------------------- */
 

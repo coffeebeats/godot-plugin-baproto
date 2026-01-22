@@ -112,9 +112,8 @@ fn write_engine_methods_section<W: Writer>(
 mod tests {
     use super::*;
     use crate::gdscript::collect::TypeKind;
-    use baproto::{
-        CodeWriterBuilder, DescriptorBuilder, Encoding, NativeType, PackageName, WireFormat,
-    };
+    use crate::gdscript::tests::create_code_writer;
+    use baproto::{DescriptorBuilder, Encoding, NativeType, PackageName, Variant, WireFormat};
 
     /* ------------------------ Tests: generate_enum ------------------------ */
 
@@ -225,17 +224,6 @@ mod tests {
 
         // Then: The keyword should be escaped.
         assert!(result.contains("const class_: int = 0"));
-    }
-
-    /* ----------------------- Fn: create_code_writer ----------------------- */
-
-    fn create_code_writer() -> CodeWriter {
-        CodeWriterBuilder::default()
-            .comment_token("##".to_owned())
-            .indent_token("\t".to_owned())
-            .newline_token("\n".to_owned())
-            .build()
-            .unwrap()
     }
 
     /* ------------------------ Fn: create_test_enum ------------------------ */

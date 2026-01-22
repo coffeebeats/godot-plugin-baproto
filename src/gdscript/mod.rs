@@ -158,7 +158,7 @@ impl Generator for GDScript {
 /* -------------------------------------------------------------------------- */
 
 #[cfg(test)]
-mod tests {
+pub(crate) mod tests {
     use std::path::Path;
 
     use super::*;
@@ -558,5 +558,16 @@ mod tests {
         // The root mod.gd should reference the game package.
         let root_mod = output.files.get(Path::new("mod.gd")).unwrap();
         assert!(root_mod.contains("const game := preload(\"./game/mod.gd\")"));
+    }
+
+    /* ----------------------- Fn: create_code_writer ----------------------- */
+
+    pub(crate) fn create_code_writer() -> CodeWriter {
+        CodeWriterBuilder::default()
+            .comment_token("##".to_owned())
+            .indent_token("\t".to_owned())
+            .newline_token("\n".to_owned())
+            .build()
+            .unwrap()
     }
 }

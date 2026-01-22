@@ -116,7 +116,7 @@ fn collect_message(entries: &mut Vec<TypeEntry>, msg: &Message, ancestors: &[&st
 /* -------------------------------------------------------------------------- */
 
 #[cfg(test)]
-mod tests {
+pub(crate) mod tests {
     use super::*;
 
     /* -------------------- Tests: collect_package_types ------------------- */
@@ -229,7 +229,7 @@ mod tests {
 
     /* ----------------------- Fn: create_test_package ---------------------- */
 
-    fn create_test_package(messages: Vec<Message>, enums: Vec<Enum>) -> Package {
+    pub(crate) fn create_test_package(messages: Vec<Message>, enums: Vec<Enum>) -> Package {
         Package {
             name: baproto::PackageName::try_from(vec!["test"]).unwrap(),
             messages,
@@ -239,7 +239,7 @@ mod tests {
 
     /* ----------------------- Fn: create_test_message ---------------------- */
 
-    fn create_test_message(
+    pub(crate) fn create_test_message(
         name: &str,
         nested_messages: Vec<Message>,
         nested_enums: Vec<Enum>,
@@ -259,7 +259,7 @@ mod tests {
 
     /* ------------------------ Fn: create_test_enum ------------------------ */
 
-    fn create_test_enum(name: &str) -> Enum {
+    pub(crate) fn create_test_enum(name: &str) -> Enum {
         Enum {
             descriptor: baproto::DescriptorBuilder::default()
                 .package(baproto::PackageName::try_from(vec!["test"]).unwrap())

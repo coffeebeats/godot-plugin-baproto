@@ -251,7 +251,7 @@ fn gen_decode_field(field_name: &str, encoding: &Encoding) -> anyhow::Result<Vec
 
         NativeType::Array { element } => {
             stmts.push(format!("{} = []", field_name));
-            stmts.push(format!("var _len := _reader.read_varint_unsigned()"));
+            stmts.push("var _len := _reader.read_varint_unsigned()".to_string());
             stmts.push("for _i in range(_len):".to_string());
 
             if matches!(element.native, NativeType::Message { .. }) {
@@ -267,7 +267,7 @@ fn gen_decode_field(field_name: &str, encoding: &Encoding) -> anyhow::Result<Vec
 
         NativeType::Map { key, value } => {
             stmts.push(format!("{} = {{}}", field_name));
-            stmts.push(format!("var _len := _reader.read_varint_unsigned()"));
+            stmts.push("var _len := _reader.read_varint_unsigned()".to_string());
             stmts.push("for _i in range(_len):".to_string());
 
             let key_expr = gen_decode_value(key)?;

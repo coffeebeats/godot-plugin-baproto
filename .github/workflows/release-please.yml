@@ -111,26 +111,27 @@ jobs:
       - name: Extract artifacts
         run: |
           extract() {
-            TARGET="$1"
-            EXT="$2"
+            DIR_NAME="$1"       # Directory name (darwin-*, linux-*, windows-*)
+            ARCHIVE_NAME="$2"   # Archive name component (macos-*, linux-*, windows-*)
+            EXT="$3"
 
-            mkdir bin/$TARGET
+            mkdir bin/$DIR_NAME
 
-            FILE="bin/baproto-gdscript-${{ needs.release-please.outputs.release-tag }}-${TARGET}.${EXT}"
+            FILE="bin/baproto-gdscript-${{ needs.release-please.outputs.release-tag }}-${ARCHIVE_NAME}.${EXT}"
             if [[ "$EXT" == 'zip' ]]; then
-              unzip $FILE -d bin/$TARGET
+              unzip $FILE -d bin/$DIR_NAME
             else
-              tar -C bin/$TARGET -xzf $FILE
+              tar -C bin/$DIR_NAME -xzf $FILE
             fi
 
           }
 
           # Extract all compiled binaries
-          extract macos-arm64 tar.gz
-          extract macos-x86_64 tar.gz
-          extract linux-x86_64 tar.gz
-          extract linux-arm64 tar.gz
-          extract windows-x86_64 zip
+          extract darwin-arm64 macos-arm64 tar.gz
+          extract darwin-x86_64 macos-x86_64 tar.gz
+          extract linux-x86_64 linux-x86_64 tar.gz
+          extract linux-arm64 linux-arm64 tar.gz
+          extract windows-x86_64 windows-x86_64 zip
 
           # Delete compressed artifacts
           rm -rf ./bin/*.tar.gz ./bin/*.zip

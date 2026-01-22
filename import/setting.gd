@@ -8,7 +8,15 @@
 @tool
 extends RefCounted
 
-# -- DEFINITIONS --------------------------------------------------------------------- #
+# -- DEPENDENCIES -------------------------------------------------------------------- #
+
+const ProjectSetting := preload("./setting.gd")
+
+# -- INITIALIZATION ------------------------------------------------------------------ #
+
+var _name: String
+
+# -- PUBLIC METHODS ------------------------------------------------------------------ #
 
 
 ## `binary_path` returns a new `ProjectSetting` instance for the 'baproto' binary path
@@ -35,16 +43,6 @@ static func output_directory() -> ProjectSetting:
 		PROPERTY_HINT_DIR
 	)
 
-# -- DEPENDENCIES -------------------------------------------------------------------- #
-
-const ProjectSetting := preload("./setting.gd")
-
-# -- INITIALIZATION ------------------------------------------------------------------ #
-
-var _name: String
-
-# -- PUBLIC METHODS ------------------------------------------------------------------ #
-
 
 ## `clear` completely removes the setting from `ProjectSettings`.
 ##
@@ -65,7 +63,9 @@ func set_value(value: Variant) -> void:
 	ProjectSettings.set_setting(_name, value)
 	ProjectSettings.save()
 
+
 # -- ENGINE METHODS (OVERRIDES) ------------------------------------------------------ #
+
 
 ## `_init` creates a new `ProjectSetting` and initializes it in `ProjectSettings`.
 func _init(
@@ -91,12 +91,14 @@ func _init(
 			"type": type,
 			"hint": hint,
 		}
-	
+
 		if not hint_string.is_empty():
 			property_info["hint_string"] = hint_string
-		
+
 		ProjectSettings.add_property_info(property_info)
 
 	ProjectSettings.save()
 
-	prints("[baproto]", "Created project setting: %s (default=%s)" % [_name, default_value])
+	prints(
+		"[baproto]", "Created project setting: %s (default=%s)" % [_name, default_value]
+	)

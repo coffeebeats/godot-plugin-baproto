@@ -99,4 +99,4 @@ func before_all() -> void:
 
 
 func before_each() -> void:
-	Platform.clear_cache() # Ensure each test case is isolated.
+	Platform.clear_cache()  # Ensure each test case is isolated.

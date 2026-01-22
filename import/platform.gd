@@ -31,11 +31,11 @@ static func clear_cache() -> void:
 static func get_architecture() -> String:
 	if OS.has_feature("x86_64"):
 		return "x86_64"
-	elif OS.has_feature("arm64"):
+	if OS.has_feature("arm64"):
 		return "arm64"
-	else:
-		push_warning("[baproto] Unsupported architecture")
-		return ""
+
+	push_warning("[baproto] Unsupported architecture")
+	return ""
 
 
 ## `get_os_name` detects the operating system and returns the normalized name used in
@@ -94,7 +94,9 @@ static func resolve_binary_path() -> String:
 	# Strategy 1: Production deployment in bin/{platform}/
 	var platform_dir := _get_platform_dir()
 	if not platform_dir.is_empty():
-		var production_path := "res://addons/baproto/bin/%s/%s" % [platform_dir, binary_name]
+		var production_path := (
+			"res://addons/baproto/bin/%s/%s" % [platform_dir, binary_name]
+		)
 		checked_locations.append(production_path)
 		resolved_path = _check_path(production_path)
 		if not resolved_path.is_empty():
@@ -125,11 +127,14 @@ static func resolve_binary_path() -> String:
 
 	# Binary not found in any location
 	push_error(
-		"[baproto] Binary not found (searching for: %s). Checked locations:\n  %s"
-		% [binary_name, "\n  ".join(checked_locations)]
+		(
+			"[baproto] Binary not found (searching for: %s). Checked locations:\n  %s"
+			% [binary_name, "\n  ".join(checked_locations)]
+		)
 	)
 
 	return ""
+
 
 # -- PRIVATE METHODS ----------------------------------------------------------------- #
 

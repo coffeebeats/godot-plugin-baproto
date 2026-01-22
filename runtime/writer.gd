@@ -11,6 +11,11 @@ extends "./bitstream.gd"
 
 const Encoding := preload("./encoding.gd")
 
+# -- INITIALIZATION ------------------------------------------------------------------ #
+
+static var _f32_bytes := PackedByteArray([0, 0, 0, 0])
+static var _f64_bytes := PackedByteArray([0, 0, 0, 0, 0, 0, 0, 0])
+
 # -- PUBLIC METHODS ------------------------------------------------------------------ #
 
 
@@ -104,20 +109,16 @@ func write_i64(value: int) -> void:
 
 ## `write_f32` writes an IEEE 754 single-precision float.
 func write_f32(value: float) -> void:
-	var buf := PackedByteArray()
-	buf.resize(4)
-	buf.encode_float(0, value)
-	var bits := buf.decode_u32(0)
+	_f32_bytes.encode_float(0, value)
+	var bits := _f32_bytes.decode_u32(0)
 	write_bits(bits, 32)
 
 
 ## `write_f64` writes an IEEE 754 double-precision float.
 func write_f64(value: float) -> void:
-	var buf := PackedByteArray()
-	buf.resize(8)
-	buf.encode_double(0, value)
-	var lo := buf.decode_u32(0)
-	var hi := buf.decode_u32(4)
+	_f64_bytes.encode_double(0, value)
+	var lo := _f64_bytes.decode_u32(0)
+	var hi := _f64_bytes.decode_u32(4)
 	write_bits(lo, 32)
 	write_bits(hi, 32)
 

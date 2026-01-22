@@ -7,6 +7,10 @@
 
 extends RefCounted
 
+# -- DEPENDENCIES -------------------------------------------------------------------- #
+
+const ProjectSetting := preload("./setting.gd")
+
 # -- CONFIGURATION ------------------------------------------------------------------- #
 
 static var _cached_path: String = ""
@@ -71,22 +75,19 @@ static func resolve_binary_path() -> String:
 	var resolved_path := ""
 
 	# Strategy 0: ProjectSettings override
-	if ProjectSettings.has_setting("baproto/binary/path"):
-		var path_override := ProjectSettings.get_setting("baproto/binary/path", "") as String
-		if not path_override.is_empty():
-			checked_locations.append(path_override + " (override)")
-			resolved_path = _check_path(path_override)
-			if not resolved_path.is_empty():
-				print("[baproto] Using binary override: %s" % resolved_path)
-				_cached_path = resolved_path
-				_cache_initialized = true
-				return resolved_path
+	var path_override: String = ProjectSetting.binary_path().get_value()
+	if not path_override.is_empty():
+		checked_locations.append(path_override)
+		resolved_path = _check_path(path_override)
+		if not resolved_path.is_empty():
+			_cached_path = resolved_path
+			_cache_initialized = true
+			return resolved_path
 
-	# Get simple binary name (no platform suffix, just "baproto-gdscript" or ".exe")
 	var binary_name := _get_binary_name()
 	if binary_name.is_empty():
 		push_error("[baproto] Cannot resolve binary: unsupported platform")
-		_cache_initialized = true
+		_cache_initialized = false
 		_cached_path = ""
 		return ""
 

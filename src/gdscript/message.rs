@@ -1,4 +1,4 @@
-use baproto::{CodeWriter, Message, StringWriter, Writer};
+use baproto::{CodeWriter, Encoding, Message, NativeType, StringWriter, WireFormat, Writer};
 
 use crate::gdscript::collect::TypeEntry;
 use crate::gdscript::types::{
@@ -34,10 +34,47 @@ pub fn generate_message(
     // Collect dependencies (external message/enum types used in fields).
     let deps = collect_field_dependencies(&msg.fields, pkg, &entry.file_stem);
 
-    // Dependencies section.
-    if !deps.is_empty() || !entry.nested.is_empty() {
-        write_dependencies_section(cw, &mut w, &deps, &entry.nested, &entry.file_stem)?;
+    // Dependencies section - runtime dependencies first.
+    cw.comment(
+        &mut w,
+        "-- DEPENDENCIES -------------------------------------------------------------------- #",
+    )?;
+    cw.blank_line(&mut w)?;
+
+    write_runtime_dependencies(cw, &mut w, pkg)?;
+
+    if !deps.is_empty() {
+        cw.blank_line(&mut w)?;
+        for (const_name, _file_stem, path) in &deps {
+            cw.writeln(
+                &mut w,
+                &format!("const {} := preload(\"{}\")", const_name, path),
+            )?;
+        }
     }
+
+    // Nested type references.
+    if !entry.nested.is_empty() {
+        cw.blank_line(&mut w)?;
+        cw.comment(
+            &mut w,
+            "-- NESTED TYPES -------------------------------------------------------------------- #",
+        )?;
+        cw.blank_line(&mut w)?;
+
+        for nested_stem in &entry.nested {
+            // Extract the simple name from the nested file stem.
+            let simple_name = nested_stem
+                .strip_prefix(&format!("{}_", entry.file_stem))
+                .unwrap_or(nested_stem);
+            cw.writeln(
+                &mut w,
+                &format!("const {} := preload(\"./{}.gd\")", simple_name, nested_stem),
+            )?;
+        }
+    }
+
+    cw.blank_line(&mut w)?;
 
     // Fields section.
     if !msg.fields.is_empty() {
@@ -47,54 +84,32 @@ pub fn generate_message(
     // Public methods section.
     write_public_methods_section(cw, &mut w)?;
 
+    // Private methods section.
+    write_private_methods_section(cw, &mut w, &msg.fields)?;
+
     Ok(w.into_content())
 }
 
-/* --------------------- Fn: write_dependencies_section --------------------- */
+/* -------------------- Fn: write_runtime_dependencies --------------------- */
 
-/// `write_dependencies_section` writes the dependencies (preloads) section.
-fn write_dependencies_section<W: Writer>(
+/// `write_runtime_dependencies` writes the runtime Writer/Reader preload statements.
+fn write_runtime_dependencies<W: Writer>(
     cw: &mut CodeWriter,
     w: &mut W,
-    deps: &[(String, String, String)],
-    nested: &[String],
-    file_stem: &str,
+    _pkg: &[String],
 ) -> anyhow::Result<()> {
-    cw.comment(
+    // Use absolute path from project root for runtime dependencies.
+    let runtime_path = "res://addons/baproto/runtime";
+
+    cw.writeln(
         w,
-        "-- DEPENDENCIES -------------------------------------------------------------------- #",
+        &format!("const _Writer := preload(\"{}/writer.gd\")", runtime_path),
     )?;
-    cw.blank_line(w)?;
+    cw.writeln(
+        w,
+        &format!("const _Reader := preload(\"{}/reader.gd\")", runtime_path),
+    )?;
 
-    // External dependencies.
-    for (const_name, _file_stem, path) in deps {
-        cw.writeln(w, &format!("const {} := preload(\"{}\")", const_name, path))?;
-    }
-
-    // Nested type references.
-    if !nested.is_empty() {
-        if !deps.is_empty() {
-            cw.blank_line(w)?;
-        }
-        cw.comment(
-            w,
-            "-- NESTED TYPES -------------------------------------------------------------------- #",
-        )?;
-        cw.blank_line(w)?;
-
-        for nested_stem in nested {
-            // Extract the simple name from the nested file stem.
-            let simple_name = nested_stem
-                .strip_prefix(&format!("{}_", file_stem))
-                .unwrap_or(nested_stem);
-            cw.writeln(
-                w,
-                &format!("const {} := preload(\"./{}.gd\")", simple_name, nested_stem),
-            )?;
-        }
-    }
-
-    cw.blank_line(w)?;
     Ok(())
 }
 
@@ -129,7 +144,7 @@ fn write_fields_section<W: Writer>(
 
 /* -------------------- Fn: write_public_methods_section -------------------- */
 
-/// `write_public_methods_section` writes the encode/decode method stubs.
+/// `write_public_methods_section` writes the serialize/deserialize methods.
 fn write_public_methods_section<W: Writer>(cw: &mut CodeWriter, w: &mut W) -> anyhow::Result<()> {
     cw.comment(
         w,
@@ -137,28 +152,375 @@ fn write_public_methods_section<W: Writer>(cw: &mut CodeWriter, w: &mut W) -> an
     )?;
     cw.blank_line(w)?;
 
-    // Encode method.
-    cw.comment(
-        w,
-        "`encode` serializes this message to the provided writer.",
-    )?;
-    cw.writeln(w, "func encode(_writer) -> void:")?;
+    // Serialize method.
+    cw.comment(w, "`serialize` writes this message to a `PackedByteArray`.")?;
+    cw.writeln(w, "func serialize(out: PackedByteArray) -> Error:")?;
     cw.indent();
-    cw.writeln(w, "pass  # TODO: Implement serialization")?;
+    cw.writeln(w, "var _writer := _Writer.new()")?;
+    cw.writeln(w, "_encode(_writer)")?;
+    cw.writeln(w, "out.append_array(_writer.to_bytes())")?;
+    cw.writeln(w, "return _writer.get_error()")?;
     cw.outdent();
     cw.blank_line(w)?;
 
-    // Decode method.
+    // Deserialize method.
     cw.comment(
         w,
-        "`decode` deserializes a message from the provided reader.",
+        "`deserialize` reads this message from a `PackedByteArray`.",
     )?;
-    cw.writeln(w, "static func decode(_reader):")?;
+    cw.writeln(w, "func deserialize(data: PackedByteArray) -> Error:")?;
     cw.indent();
-    cw.writeln(w, "return null  # TODO: Implement deserialization")?;
+    cw.writeln(w, "var _reader := _Reader.new(data)")?;
+    cw.writeln(w, "_decode(_reader)")?;
+    cw.writeln(w, "return _reader.get_error()")?;
     cw.outdent();
+    cw.blank_line(w)?;
 
     Ok(())
+}
+
+/* ------------------- Fn: write_private_methods_section -------------------- */
+
+/// `write_private_methods_section` writes the _encode/_decode methods with field logic.
+fn write_private_methods_section<W: Writer>(
+    cw: &mut CodeWriter,
+    w: &mut W,
+    fields: &[baproto::Field],
+) -> anyhow::Result<()> {
+    cw.comment(
+        w,
+        "-- PRIVATE METHODS ----------------------------------------------------------------- #",
+    )?;
+    cw.blank_line(w)?;
+
+    // _encode method.
+    cw.comment(w, "`_encode` serializes fields to the writer.")?;
+    cw.writeln(w, "func _encode(_writer) -> void:")?;
+    cw.indent();
+
+    if fields.is_empty() {
+        cw.writeln(w, "pass")?;
+    } else {
+        for field in fields {
+            let field_name = escape_keyword(&field.name);
+            let encode_stmts = gen_encode_value(&field_name, &field.encoding)?;
+            for stmt in encode_stmts {
+                cw.writeln(w, &stmt)?;
+            }
+        }
+    }
+
+    cw.outdent();
+    cw.blank_line(w)?;
+
+    // _decode method.
+    cw.comment(w, "`_decode` deserializes fields from the reader.")?;
+    cw.writeln(w, "func _decode(_reader) -> void:")?;
+    cw.indent();
+
+    if fields.is_empty() {
+        cw.writeln(w, "pass")?;
+    } else {
+        for field in fields {
+            let field_name = escape_keyword(&field.name);
+            let decode_stmts = gen_decode_field(&field_name, &field.encoding)?;
+            for stmt in decode_stmts {
+                cw.writeln(w, &stmt)?;
+            }
+        }
+    }
+
+    cw.outdent();
+    cw.blank_line(w)?;
+
+    Ok(())
+}
+
+/* ------------------------- Fn: gen_decode_field --------------------------- */
+
+/// `gen_decode_field` generates the decode statements for a field.
+fn gen_decode_field(field_name: &str, encoding: &Encoding) -> anyhow::Result<Vec<String>> {
+    let mut stmts = Vec::new();
+
+    match &encoding.native {
+        NativeType::Message { .. } => {
+            let type_str = type_name(&encoding.native);
+            stmts.push(format!("{} = {}.new()", field_name, type_str));
+            stmts.push(format!("{}._decode(_reader)", field_name));
+        }
+
+        NativeType::Array { element } => {
+            stmts.push(format!("{} = []", field_name));
+            stmts.push("var _len := _reader.read_varint_unsigned()".to_string());
+            stmts.push("for _i in range(_len):".to_string());
+
+            if matches!(element.native, NativeType::Message { .. }) {
+                let type_str = type_name(&element.native);
+                stmts.push(format!("\tvar _item := {}.new()", type_str));
+                stmts.push("\t_item._decode(_reader)".to_string());
+                stmts.push(format!("\t{}.append(_item)", field_name));
+            } else {
+                let item_expr = gen_decode_value(element)?;
+                stmts.push(format!("\t{}.append({})", field_name, item_expr));
+            }
+        }
+
+        NativeType::Map { key, value } => {
+            stmts.push(format!("{} = {{}}", field_name));
+            stmts.push("var _len := _reader.read_varint_unsigned()".to_string());
+            stmts.push("for _i in range(_len):".to_string());
+
+            let key_expr = gen_decode_value(key)?;
+            stmts.push(format!("\tvar _key := {}", key_expr));
+
+            if matches!(value.native, NativeType::Message { .. }) {
+                let type_str = type_name(&value.native);
+                stmts.push(format!("\tvar _val := {}.new()", type_str));
+                stmts.push("\t_val._decode(_reader)".to_string());
+                stmts.push(format!("\t{}[_key] = _val", field_name));
+            } else {
+                let val_expr = gen_decode_value(value)?;
+                stmts.push(format!("\t{}[_key] = {}", field_name, val_expr));
+            }
+        }
+
+        _ => {
+            let decode_expr = gen_decode_value(encoding)?;
+            stmts.push(format!("{} = {}", field_name, decode_expr));
+        }
+    }
+
+    Ok(stmts)
+}
+
+/* ------------------------- Fn: gen_encode_value --------------------------- */
+
+/// `gen_encode_value` generates encode statements for a value given its encoding.
+fn gen_encode_value(value_expr: &str, encoding: &Encoding) -> anyhow::Result<Vec<String>> {
+    let mut stmts = Vec::new();
+
+    match (&encoding.wire, &encoding.native) {
+        // Message types - direct stream passing.
+        (_, NativeType::Message { .. }) => {
+            stmts.push(format!("{}._encode(_writer)", value_expr));
+        }
+
+        // String type.
+        (WireFormat::LengthPrefixed { .. }, NativeType::String) => {
+            stmts.push(format!("_writer.write_string({})", value_expr));
+        }
+
+        // Bytes type.
+        (WireFormat::LengthPrefixed { .. }, NativeType::Bytes) => {
+            stmts.push(format!(
+                "_writer.write_varint_unsigned({}.size())",
+                value_expr
+            ));
+            stmts.push(format!("_writer.write_bytes({})", value_expr));
+        }
+
+        // Array type.
+        (WireFormat::LengthPrefixed { .. }, NativeType::Array { element }) => {
+            stmts.push(format!(
+                "_writer.write_varint_unsigned({}.size())",
+                value_expr
+            ));
+            stmts.push(format!("for _item in {}:", value_expr));
+            let item_stmts = gen_encode_value("_item", element)?;
+            for item_stmt in item_stmts {
+                stmts.push(format!("\t{}", item_stmt));
+            }
+        }
+
+        // Map type.
+        (WireFormat::LengthPrefixed { .. }, NativeType::Map { key, value }) => {
+            stmts.push(format!(
+                "_writer.write_varint_unsigned({}.size())",
+                value_expr
+            ));
+            stmts.push(format!("for _key in {}:", value_expr));
+            let key_stmts = gen_encode_value("_key", key)?;
+            for key_stmt in key_stmts {
+                stmts.push(format!("\t{}", key_stmt));
+            }
+            let val_stmts = gen_encode_value(&format!("{}[_key]", value_expr), value)?;
+            for val_stmt in val_stmts {
+                stmts.push(format!("\t{}", val_stmt));
+            }
+        }
+
+        // Bool type.
+        (WireFormat::Bits { count: 1 }, NativeType::Bool) => {
+            stmts.push(format!("_writer.write_bool({})", value_expr));
+        }
+
+        // Int types with specific bit widths and signedness.
+        (WireFormat::Bits { count }, NativeType::Int { bits, signed }) => {
+            // Check for zigzag transform.
+            let has_zigzag = encoding
+                .transforms
+                .iter()
+                .any(|t| matches!(t, baproto::Transform::ZigZag));
+
+            if has_zigzag {
+                stmts.push(format!("_writer.write_zigzag({}, {})", value_expr, count));
+            } else {
+                match (bits, signed, count) {
+                    (8, false, 8) => stmts.push(format!("_writer.write_u8({})", value_expr)),
+                    (8, true, 8) => stmts.push(format!("_writer.write_i8({})", value_expr)),
+                    (16, false, 16) => stmts.push(format!("_writer.write_u16({})", value_expr)),
+                    (16, true, 16) => stmts.push(format!("_writer.write_i16({})", value_expr)),
+                    (32, false, 32) => stmts.push(format!("_writer.write_u32({})", value_expr)),
+                    (32, true, 32) => stmts.push(format!("_writer.write_i32({})", value_expr)),
+                    (64, _, 64) => stmts.push(format!("_writer.write_i64({})", value_expr)),
+                    _ => stmts.push(format!("_writer.write_bits({}, {})", value_expr, count)),
+                }
+            }
+        }
+
+        // Varint unsigned.
+        (WireFormat::LengthPrefixed { .. }, NativeType::Int { signed: false, .. }) => {
+            stmts.push(format!("_writer.write_varint_unsigned({})", value_expr));
+        }
+
+        // Varint signed.
+        (WireFormat::LengthPrefixed { .. }, NativeType::Int { signed: true, .. }) => {
+            stmts.push(format!("_writer.write_varint_signed({})", value_expr));
+        }
+
+        // Float types.
+        (WireFormat::Bits { count: 32 }, NativeType::Float { bits: 32 }) => {
+            stmts.push(format!("_writer.write_f32({})", value_expr));
+        }
+        (WireFormat::Bits { count: 64 }, NativeType::Float { bits: 64 }) => {
+            stmts.push(format!("_writer.write_f64({})", value_expr));
+        }
+
+        // Enum types (represented as int).
+        (wire, NativeType::Enum { descriptor: _ }) => {
+            // Treat enum as its underlying int encoding.
+            let int_encoding = Encoding {
+                wire: wire.clone(),
+                native: NativeType::Int {
+                    bits: 32,
+                    signed: true,
+                },
+                transforms: encoding.transforms.clone(),
+                padding_bits: encoding.padding_bits,
+            };
+            return gen_encode_value(value_expr, &int_encoding);
+        }
+
+        _ => {
+            anyhow::bail!(
+                "Unsupported encoding combination: wire={:?}, native={:?}",
+                encoding.wire,
+                encoding.native
+            );
+        }
+    }
+
+    Ok(stmts)
+}
+
+/* ------------------------- Fn: gen_decode_value --------------------------- */
+
+/// `gen_decode_value` generates a decode expression for a value.
+fn gen_decode_value(encoding: &Encoding) -> anyhow::Result<String> {
+    let expr = match (&encoding.wire, &encoding.native) {
+        // Message types handled separately in gen_decode_field.
+        (_, NativeType::Message { .. }) => {
+            return Err(anyhow::anyhow!(
+                "Message decode should be handled in gen_decode_field"
+            ));
+        }
+
+        // String type.
+        (WireFormat::LengthPrefixed { .. }, NativeType::String) => {
+            "_reader.read_string()".to_string()
+        }
+
+        // Bytes type.
+        (WireFormat::LengthPrefixed { .. }, NativeType::Bytes) => {
+            "_reader.read_bytes(_reader.read_varint_unsigned())".to_string()
+        }
+
+        (_, NativeType::Array { .. }) | (_, NativeType::Map { .. }) => {
+            return Err(anyhow::anyhow!(
+                "Array/Map decode should be handled in gen_decode_field"
+            ));
+        }
+
+        // Bool type.
+        (WireFormat::Bits { count: 1 }, NativeType::Bool) => "_reader.read_bool()".to_string(),
+
+        // Int types with specific bit widths and signedness.
+        (WireFormat::Bits { count }, NativeType::Int { bits, signed }) => {
+            // Check for zigzag transform.
+            let has_zigzag = encoding
+                .transforms
+                .iter()
+                .any(|t| matches!(t, baproto::Transform::ZigZag));
+
+            if has_zigzag {
+                format!("_reader.read_zigzag({})", count)
+            } else {
+                match (bits, signed, count) {
+                    (8, false, 8) => "_reader.read_u8()".to_string(),
+                    (8, true, 8) => "_reader.read_i8()".to_string(),
+                    (16, false, 16) => "_reader.read_u16()".to_string(),
+                    (16, true, 16) => "_reader.read_i16()".to_string(),
+                    (32, false, 32) => "_reader.read_u32()".to_string(),
+                    (32, true, 32) => "_reader.read_i32()".to_string(),
+                    (64, _, 64) => "_reader.read_i64()".to_string(),
+                    _ => format!("_reader.read_bits({})", count),
+                }
+            }
+        }
+
+        // Varint unsigned.
+        (WireFormat::LengthPrefixed { .. }, NativeType::Int { signed: false, .. }) => {
+            "_reader.read_varint_unsigned()".to_string()
+        }
+
+        // Varint signed.
+        (WireFormat::LengthPrefixed { .. }, NativeType::Int { signed: true, .. }) => {
+            "_reader.read_varint_signed()".to_string()
+        }
+
+        // Float types.
+        (WireFormat::Bits { count: 32 }, NativeType::Float { bits: 32 }) => {
+            "_reader.read_f32()".to_string()
+        }
+        (WireFormat::Bits { count: 64 }, NativeType::Float { bits: 64 }) => {
+            "_reader.read_f64()".to_string()
+        }
+
+        // Enum types (represented as int).
+        (wire, NativeType::Enum { descriptor: _ }) => {
+            // Treat enum as its underlying int encoding.
+            let int_encoding = Encoding {
+                wire: wire.clone(),
+                native: NativeType::Int {
+                    bits: 32,
+                    signed: true,
+                },
+                transforms: encoding.transforms.clone(),
+                padding_bits: encoding.padding_bits,
+            };
+            gen_decode_value(&int_encoding)?
+        }
+
+        _ => {
+            return Err(anyhow::anyhow!(
+                "Unsupported encoding combination: wire={:?}, native={:?}",
+                encoding.wire,
+                encoding.native
+            ));
+        }
+    };
+
+    Ok(expr)
 }
 
 /* -------------------------------------------------------------------------- */
@@ -249,25 +611,6 @@ mod tests {
     }
 
     #[test]
-    fn test_write_dependencies_section_with_nested() {
-        // Given: Some nested types.
-        let deps: Vec<(String, String, String)> = vec![];
-        let nested = vec!["Player_Stats".to_string(), "Player_State".to_string()];
-        let file_stem = "Player";
-
-        // When: Writing the dependencies section.
-        let mut cw = create_code_writer();
-        let mut w = StringWriter::default();
-        write_dependencies_section(&mut cw, &mut w, &deps, &nested, file_stem).unwrap();
-
-        let result = w.into_content();
-
-        // Then: Output should contain nested type preloads.
-        assert!(result.contains("const Stats := preload(\"./Player_Stats.gd\")"));
-        assert!(result.contains("const State := preload(\"./Player_State.gd\")"));
-    }
-
-    #[test]
     fn test_write_public_methods_section() {
         // Given: A code writer.
         let mut cw = create_code_writer();
@@ -278,10 +621,486 @@ mod tests {
 
         let result = w.into_content();
 
-        // Then: Output should contain encode and decode stubs.
-        assert!(result.contains("func encode(_writer) -> void:"));
-        assert!(result.contains("static func decode(_reader):"));
-        assert!(result.contains("pass  # TODO: Implement serialization"));
-        assert!(result.contains("return null  # TODO: Implement deserialization"));
+        // Then: Output should contain serialize and deserialize methods.
+        assert!(result.contains("func serialize(out: PackedByteArray) -> Error:"));
+        assert!(result.contains("func deserialize(data: PackedByteArray) -> Error:"));
+        assert!(result.contains("var _writer := _Writer.new()"));
+        assert!(result.contains("var _reader := _Reader.new(data)"));
+        assert!(result.contains("_encode(_writer)"));
+        assert!(result.contains("_decode(_reader)"));
+    }
+
+    /* ----------------------- Tests: gen_encode_value ---------------------- */
+
+    #[test]
+    fn test_gen_encode_value_bool() {
+        // Given: A bool encoding.
+        let encoding = Encoding {
+            wire: WireFormat::Bits { count: 1 },
+            native: NativeType::Bool,
+            transforms: vec![],
+            padding_bits: None,
+        };
+
+        // When: Generating encode statements.
+        let stmts = gen_encode_value("flag", &encoding).unwrap();
+
+        // Then: Output should contain write_bool call.
+        assert_eq!(stmts.len(), 1);
+        assert_eq!(stmts[0], "_writer.write_bool(flag)");
+    }
+
+    #[test]
+    fn test_gen_encode_value_string() {
+        // Given: A string encoding.
+        let encoding = Encoding {
+            wire: WireFormat::LengthPrefixed { prefix_bits: 16 },
+            native: NativeType::String,
+            transforms: vec![],
+            padding_bits: None,
+        };
+
+        // When: Generating encode statements.
+        let stmts = gen_encode_value("name", &encoding).unwrap();
+
+        // Then: Output should contain write_string call.
+        assert_eq!(stmts.len(), 1);
+        assert_eq!(stmts[0], "_writer.write_string(name)");
+    }
+
+    #[test]
+    fn test_gen_encode_value_int_u32() {
+        // Given: A u32 encoding.
+        let encoding = Encoding {
+            wire: WireFormat::Bits { count: 32 },
+            native: NativeType::Int {
+                bits: 32,
+                signed: false,
+            },
+            transforms: vec![],
+            padding_bits: None,
+        };
+
+        // When: Generating encode statements.
+        let stmts = gen_encode_value("id", &encoding).unwrap();
+
+        // Then: Output should contain write_u32 call.
+        assert_eq!(stmts.len(), 1);
+        assert_eq!(stmts[0], "_writer.write_u32(id)");
+    }
+
+    #[test]
+    fn test_gen_encode_value_int_i32() {
+        // Given: An i32 encoding.
+        let encoding = Encoding {
+            wire: WireFormat::Bits { count: 32 },
+            native: NativeType::Int {
+                bits: 32,
+                signed: true,
+            },
+            transforms: vec![],
+            padding_bits: None,
+        };
+
+        // When: Generating encode statements.
+        let stmts = gen_encode_value("health", &encoding).unwrap();
+
+        // Then: Output should contain write_i32 call.
+        assert_eq!(stmts.len(), 1);
+        assert_eq!(stmts[0], "_writer.write_i32(health)");
+    }
+
+    #[test]
+    fn test_gen_encode_value_int_zigzag() {
+        // Given: An int encoding with zigzag transform.
+        let encoding = Encoding {
+            wire: WireFormat::Bits { count: 16 },
+            native: NativeType::Int {
+                bits: 16,
+                signed: true,
+            },
+            transforms: vec![baproto::Transform::ZigZag],
+            padding_bits: None,
+        };
+
+        // When: Generating encode statements.
+        let stmts = gen_encode_value("delta", &encoding).unwrap();
+
+        // Then: Output should contain write_zigzag call.
+        assert_eq!(stmts.len(), 1);
+        assert_eq!(stmts[0], "_writer.write_zigzag(delta, 16)");
+    }
+
+    #[test]
+    fn test_gen_encode_value_float_f32() {
+        // Given: An f32 encoding.
+        let encoding = Encoding {
+            wire: WireFormat::Bits { count: 32 },
+            native: NativeType::Float { bits: 32 },
+            transforms: vec![],
+            padding_bits: None,
+        };
+
+        // When: Generating encode statements.
+        let stmts = gen_encode_value("score", &encoding).unwrap();
+
+        // Then: Output should contain write_f32 call.
+        assert_eq!(stmts.len(), 1);
+        assert_eq!(stmts[0], "_writer.write_f32(score)");
+    }
+
+    #[test]
+    fn test_gen_encode_value_bytes() {
+        // Given: A bytes encoding.
+        let encoding = Encoding {
+            wire: WireFormat::LengthPrefixed { prefix_bits: 16 },
+            native: NativeType::Bytes,
+            transforms: vec![],
+            padding_bits: None,
+        };
+
+        // When: Generating encode statements.
+        let stmts = gen_encode_value("data", &encoding).unwrap();
+
+        // Then: Output should contain length prefix and write_bytes call.
+        assert_eq!(stmts.len(), 2);
+        assert_eq!(stmts[0], "_writer.write_varint_unsigned(data.size())");
+        assert_eq!(stmts[1], "_writer.write_bytes(data)");
+    }
+
+    #[test]
+    fn test_gen_encode_value_varint_unsigned() {
+        // Given: A varint unsigned encoding.
+        let encoding = Encoding {
+            wire: WireFormat::LengthPrefixed { prefix_bits: 16 },
+            native: NativeType::Int {
+                bits: 64,
+                signed: false,
+            },
+            transforms: vec![],
+            padding_bits: None,
+        };
+
+        // When: Generating encode statements.
+        let stmts = gen_encode_value("count", &encoding).unwrap();
+
+        // Then: Output should contain write_varint_unsigned call.
+        assert_eq!(stmts.len(), 1);
+        assert_eq!(stmts[0], "_writer.write_varint_unsigned(count)");
+    }
+
+    /* ----------------------- Tests: gen_decode_value ---------------------- */
+
+    #[test]
+    fn test_gen_decode_value_bool() {
+        // Given: A bool encoding.
+        let encoding = Encoding {
+            wire: WireFormat::Bits { count: 1 },
+            native: NativeType::Bool,
+            transforms: vec![],
+            padding_bits: None,
+        };
+
+        // When: Generating decode expression.
+        let expr = gen_decode_value(&encoding).unwrap();
+
+        // Then: Output should be read_bool call.
+        assert_eq!(expr, "_reader.read_bool()");
+    }
+
+    #[test]
+    fn test_gen_decode_value_string() {
+        // Given: A string encoding.
+        let encoding = Encoding {
+            wire: WireFormat::LengthPrefixed { prefix_bits: 16 },
+            native: NativeType::String,
+            transforms: vec![],
+            padding_bits: None,
+        };
+
+        // When: Generating decode expression.
+        let expr = gen_decode_value(&encoding).unwrap();
+
+        // Then: Output should be read_string call.
+        assert_eq!(expr, "_reader.read_string()");
+    }
+
+    #[test]
+    fn test_gen_decode_value_int_u16() {
+        // Given: A u16 encoding.
+        let encoding = Encoding {
+            wire: WireFormat::Bits { count: 16 },
+            native: NativeType::Int {
+                bits: 16,
+                signed: false,
+            },
+            transforms: vec![],
+            padding_bits: None,
+        };
+
+        // When: Generating decode expression.
+        let expr = gen_decode_value(&encoding).unwrap();
+
+        // Then: Output should be read_u16 call.
+        assert_eq!(expr, "_reader.read_u16()");
+    }
+
+    #[test]
+    fn test_gen_decode_value_int_i64() {
+        // Given: An i64 encoding.
+        let encoding = Encoding {
+            wire: WireFormat::Bits { count: 64 },
+            native: NativeType::Int {
+                bits: 64,
+                signed: true,
+            },
+            transforms: vec![],
+            padding_bits: None,
+        };
+
+        // When: Generating decode expression.
+        let expr = gen_decode_value(&encoding).unwrap();
+
+        // Then: Output should be read_i64 call.
+        assert_eq!(expr, "_reader.read_i64()");
+    }
+
+    #[test]
+    fn test_gen_decode_value_int_zigzag() {
+        // Given: An int encoding with zigzag transform.
+        let encoding = Encoding {
+            wire: WireFormat::Bits { count: 8 },
+            native: NativeType::Int {
+                bits: 8,
+                signed: true,
+            },
+            transforms: vec![baproto::Transform::ZigZag],
+            padding_bits: None,
+        };
+
+        // When: Generating decode expression.
+        let expr = gen_decode_value(&encoding).unwrap();
+
+        // Then: Output should be read_zigzag call.
+        assert_eq!(expr, "_reader.read_zigzag(8)");
+    }
+
+    #[test]
+    fn test_gen_decode_value_float_f64() {
+        // Given: An f64 encoding.
+        let encoding = Encoding {
+            wire: WireFormat::Bits { count: 64 },
+            native: NativeType::Float { bits: 64 },
+            transforms: vec![],
+            padding_bits: None,
+        };
+
+        // When: Generating decode expression.
+        let expr = gen_decode_value(&encoding).unwrap();
+
+        // Then: Output should be read_f64 call.
+        assert_eq!(expr, "_reader.read_f64()");
+    }
+
+    #[test]
+    fn test_gen_decode_value_bytes() {
+        // Given: A bytes encoding.
+        let encoding = Encoding {
+            wire: WireFormat::LengthPrefixed { prefix_bits: 16 },
+            native: NativeType::Bytes,
+            transforms: vec![],
+            padding_bits: None,
+        };
+
+        // When: Generating decode expression.
+        let expr = gen_decode_value(&encoding).unwrap();
+
+        // Then: Output should read length and then bytes.
+        assert_eq!(expr, "_reader.read_bytes(_reader.read_varint_unsigned())");
+    }
+
+    #[test]
+    fn test_gen_decode_value_varint_signed() {
+        // Given: A varint signed encoding.
+        let encoding = Encoding {
+            wire: WireFormat::LengthPrefixed { prefix_bits: 16 },
+            native: NativeType::Int {
+                bits: 32,
+                signed: true,
+            },
+            transforms: vec![],
+            padding_bits: None,
+        };
+
+        // When: Generating decode expression.
+        let expr = gen_decode_value(&encoding).unwrap();
+
+        // Then: Output should be read_varint_signed call.
+        assert_eq!(expr, "_reader.read_varint_signed()");
+    }
+
+    /* ----------------------- Tests: gen_decode_field ---------------------- */
+
+    #[test]
+    fn test_gen_decode_field_scalar() {
+        // Given: A scalar field encoding.
+        let encoding = Encoding {
+            wire: WireFormat::Bits { count: 32 },
+            native: NativeType::Int {
+                bits: 32,
+                signed: false,
+            },
+            transforms: vec![],
+            padding_bits: None,
+        };
+
+        // When: Generating decode statements for a field.
+        let stmts = gen_decode_field("count", &encoding).unwrap();
+
+        // Then: Output should contain assignment with read call.
+        assert_eq!(stmts.len(), 1);
+        assert_eq!(stmts[0], "count = _reader.read_u32()");
+    }
+
+    #[test]
+    fn test_gen_decode_field_array() {
+        // Given: An array field encoding.
+        let encoding = Encoding {
+            wire: WireFormat::LengthPrefixed { prefix_bits: 16 },
+            native: NativeType::Array {
+                element: Box::new(Encoding {
+                    wire: WireFormat::Bits { count: 32 },
+                    native: NativeType::Int {
+                        bits: 32,
+                        signed: false,
+                    },
+                    transforms: vec![],
+                    padding_bits: None,
+                }),
+            },
+            transforms: vec![],
+            padding_bits: None,
+        };
+
+        // When: Generating decode statements for a field.
+        let stmts = gen_decode_field("scores", &encoding).unwrap();
+
+        // Then: Output should contain sequential code without inline lambda.
+        assert_eq!(stmts.len(), 4);
+        assert_eq!(stmts[0], "scores = []");
+        assert_eq!(stmts[1], "var _len := _reader.read_varint_unsigned()");
+        assert_eq!(stmts[2], "for _i in range(_len):");
+        assert_eq!(stmts[3], "\tscores.append(_reader.read_u32())");
+        // Verify no inline lambda patterns.
+        assert!(!stmts.join("\n").contains("(func():"));
+        assert!(!stmts.join("\n").contains(").call()"));
+    }
+
+    #[test]
+    fn test_gen_decode_field_map() {
+        // Given: A map field encoding.
+        let encoding = Encoding {
+            wire: WireFormat::LengthPrefixed { prefix_bits: 16 },
+            native: NativeType::Map {
+                key: Box::new(Encoding {
+                    wire: WireFormat::LengthPrefixed { prefix_bits: 16 },
+                    native: NativeType::String,
+                    transforms: vec![],
+                    padding_bits: None,
+                }),
+                value: Box::new(Encoding {
+                    wire: WireFormat::Bits { count: 32 },
+                    native: NativeType::Int {
+                        bits: 32,
+                        signed: true,
+                    },
+                    transforms: vec![],
+                    padding_bits: None,
+                }),
+            },
+            transforms: vec![],
+            padding_bits: None,
+        };
+
+        // When: Generating decode statements for a field.
+        let stmts = gen_decode_field("attributes", &encoding).unwrap();
+
+        // Then: Output should contain sequential code without inline lambda.
+        assert_eq!(stmts.len(), 5);
+        assert_eq!(stmts[0], "attributes = {}");
+        assert_eq!(stmts[1], "var _len := _reader.read_varint_unsigned()");
+        assert_eq!(stmts[2], "for _i in range(_len):");
+        assert_eq!(stmts[3], "\tvar _key := _reader.read_string()");
+        assert_eq!(stmts[4], "\tattributes[_key] = _reader.read_i32()");
+        // Verify no inline lambda patterns.
+        assert!(!stmts.join("\n").contains("(func():"));
+        assert!(!stmts.join("\n").contains(").call()"));
+    }
+
+    /* ---------------- Tests: write_private_methods_section ---------------- */
+
+    #[test]
+    fn test_write_private_methods_section_empty() {
+        // Given: No fields.
+        let fields = vec![];
+
+        // When: Writing the private methods section.
+        let mut cw = create_code_writer();
+        let mut w = StringWriter::default();
+        write_private_methods_section(&mut cw, &mut w, &fields).unwrap();
+
+        let result = w.into_content();
+
+        // Then: Output should contain empty methods with pass statements.
+        assert!(result.contains("func _encode(_writer) -> void:"));
+        assert!(result.contains("func _decode(_reader) -> void:"));
+        assert!(result.contains("pass"));
+    }
+
+    #[test]
+    fn test_write_private_methods_section_with_fields() {
+        // Given: Fields with various types.
+        let fields = vec![
+            baproto::Field {
+                name: "flag".to_string(),
+                index: 0,
+                encoding: Encoding {
+                    wire: WireFormat::Bits { count: 1 },
+                    native: NativeType::Bool,
+                    transforms: vec![],
+                    padding_bits: None,
+                },
+                doc: None,
+            },
+            baproto::Field {
+                name: "id".to_string(),
+                index: 1,
+                encoding: Encoding {
+                    wire: WireFormat::Bits { count: 32 },
+                    native: NativeType::Int {
+                        bits: 32,
+                        signed: false,
+                    },
+                    transforms: vec![],
+                    padding_bits: None,
+                },
+                doc: None,
+            },
+        ];
+
+        // When: Writing the private methods section.
+        let mut cw = create_code_writer();
+        let mut w = StringWriter::default();
+        write_private_methods_section(&mut cw, &mut w, &fields).unwrap();
+
+        let result = w.into_content();
+
+        // Then: Output should contain encode/decode methods with field logic.
+        assert!(result.contains("func _encode(_writer) -> void:"));
+        assert!(result.contains("_writer.write_bool(flag)"));
+        assert!(result.contains("_writer.write_u32(id)"));
+        assert!(result.contains("func _decode(_reader) -> void:"));
+        assert!(result.contains("flag = _reader.read_bool()"));
+        assert!(result.contains("id = _reader.read_u32()"));
     }
 }

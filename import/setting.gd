@@ -53,10 +53,11 @@ func clear() -> void:
 	set_value(null)
 
 
-## `get_value` retrieves the current value of the setting. Returns the `default_value`
-## if the setting doesn't exist.
-func get_value(default_value: Variant = null) -> Variant:
-	return ProjectSettings.get_setting(_name, default_value)
+## `get_value` retrieves the current value of the setting.
+func get_value() -> Variant:
+	var value: Variant = ProjectSettings.get_setting(_name)
+	assert(value != null, "invalid state; missing setting value")
+	return value
 
 
 ## `set_value` updates the setting to the given value and saves `ProjectSettings`.

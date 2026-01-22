@@ -24,6 +24,7 @@ var _import_plugin: EditorImportPlugin = null
 
 # -- ENGINE METHODS (OVERRIDES) ------------------------------------------------------ #
 
+
 func _enter_tree() -> void:
 	# Initialize project settings
 	ProjectSetting.binary_path()

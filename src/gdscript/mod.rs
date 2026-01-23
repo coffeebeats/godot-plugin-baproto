@@ -127,8 +127,9 @@ impl Generator for GDScript {
 
             // Generate mod.gd with both types and subpackages.
             let mut cw = self.writer.clone();
-            let content = namespace::generate_namespace(&mut cw, &pkg_name, &entries, &subpackages)
-                .map_err(|e| GeneratorError::Generation(e.to_string()))?;
+            let content =
+                namespace::generate_namespace(&mut cw, &pkg_name, None, &entries, &subpackages)
+                    .map_err(|e| GeneratorError::Generation(e.to_string()))?;
 
             output.add(format!("{}/mod.gd", pkg_path), content);
         }
@@ -143,8 +144,9 @@ impl Generator for GDScript {
             root_subpackages.sort();
 
             let mut cw = self.writer.clone();
-            let content = namespace::generate_namespace(&mut cw, "", &[], &root_subpackages)
-                .map_err(|e| GeneratorError::Generation(e.to_string()))?;
+            let content =
+                namespace::generate_namespace(&mut cw, "", Some("BAProto"), &[], &root_subpackages)
+                    .map_err(|e| GeneratorError::Generation(e.to_string()))?;
 
             output.add("mod.gd".to_string(), content);
         }

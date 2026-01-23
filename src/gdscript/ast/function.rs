@@ -2,93 +2,92 @@ use baproto::CodeWriter;
 use baproto::Writer;
 use derive_builder::Builder;
 
+use super::Assignment;
+use super::Comment;
 use super::Emit;
-use super::Stmt;
+use super::Item;
+use super::TypeHint;
 
 /* -------------------------------------------------------------------------- */
-/*                              Struct: FuncDecl                              */
+/*                                Struct: FnDef                               */
 /* -------------------------------------------------------------------------- */
 
-/// `FuncDecl` represents a function declaration.
-///
-/// NOTE: `body` is `Vec<Stmt>` (not `Vec<Item>`) since function bodies contain
-/// only statements, not nested function declarations. This also breaks the
-/// [`Stmt`] to [`FuncDecl`] cycle.
-#[allow(dead_code)]
+/// `FnDef` represents a function declaration.
 #[derive(Clone, Debug, Builder)]
 #[builder(setter(into))]
-pub struct FuncDecl {
-    pub name: String,
-    #[builder(default)]
-    pub params: Vec<FuncParam>,
+pub struct FnDef {
+    /// `comment` is a doc comment for the function.
     #[builder(default, setter(into, strip_option))]
-    pub return_type: Option<String>,
-    #[builder(default, setter(into, strip_option))]
-    pub doc: Option<String>,
-    #[builder(default)]
-    pub body: Vec<Stmt>,
-}
+    pub comment: Option<Comment>,
 
-/* ---------------------------- Struct: FuncParam --------------------------- */
-
-/// `FuncParam` represents a function parameter.
-#[allow(dead_code)]
-#[derive(Clone, Debug, Builder)]
-#[builder(setter(into))]
-pub struct FuncParam {
+    /// `name` is the name of the function.
     pub name: String,
+
+    /// `params` is the set of function parameters.
+    #[builder(default)]
+    pub params: Vec<Assignment>,
+
+    /// `type_hint` is the function's return type hint.
     #[builder(default, setter(into, strip_option))]
-    pub type_hint: Option<String>,
-    #[builder(default, setter(into, strip_option))]
-    pub default_value: Option<String>,
+    pub type_hint: Option<TypeHint>,
+
+    /// `body` is the function's contents.
+    #[builder(default)]
+    pub body: Block,
 }
 
 /* ------------------------------- Impl: Emit ------------------------------- */
 
-impl Emit for FuncDecl {
+impl Emit for FnDef {
     fn emit<W: Writer>(&self, cw: &mut CodeWriter, w: &mut W) -> anyhow::Result<()> {
-        // Emit doc comment if present.
-        if let Some(doc_text) = &self.doc {
-            cw.comment_block(w, doc_text)?;
+        if let Some(comment) = self.comment.as_ref() {
+            comment.emit(cw, w)?;
         }
 
-        // Build function signature: `func name(params) -> ReturnType:`
-        let mut sig = format!("func {}", self.name);
+        cw.write(w, &format!("func {}(", self.name))?;
 
-        // Add parameters.
-        sig.push('(');
-        for (i, param) in self.params.iter().enumerate() {
-            if i > 0 {
-                sig.push_str(", ");
-            }
-            let mut param_str = param.name.clone();
-            if let Some(hint) = &param.type_hint {
-                param_str.push_str(&format!(": {}", hint));
-            }
-            if let Some(default_val) = &param.default_value {
-                param_str.push_str(&format!(" = {}", default_val));
-            }
-            sig.push_str(&param_str);
+        for param in &self.params {
+            param.emit(cw, w)?;
         }
-        sig.push(')');
 
-        // Add return type.
-        if let Some(ret) = &self.return_type {
-            sig.push_str(&format!(" -> {}", ret));
-        }
-        sig.push(':');
+        cw.write(w, ")")?;
 
-        cw.writeln(w, &sig)?;
+        match &self.type_hint {
+            None | Some(TypeHint::Infer) => cw.writeln(w, ":"),
+            Some(TypeHint::Explicit(hint)) => cw.writeln(w, &format!(" -> {}:", hint)),
+        }?;
 
-        // Emit body.
+        self.body.emit(cw, w)?;
+
+        Ok(())
+    }
+}
+
+/* -------------------------------------------------------------------------- */
+/*                                Struct: Block                               */
+/* -------------------------------------------------------------------------- */
+
+/// `Block` represents a nested block of code (used in function definitions and
+/// control statement bodies).
+#[derive(Clone, Debug, Default)]
+pub struct Block {
+    pub body: Vec<Item>,
+}
+
+/* ------------------------------- Impl: Emit ------------------------------- */
+
+impl Emit for Block {
+    fn emit<W: Writer>(&self, cw: &mut CodeWriter, w: &mut W) -> anyhow::Result<()> {
         cw.indent();
+
         if self.body.is_empty() {
             cw.writeln(w, "pass")?;
         } else {
-            for stmt in &self.body {
-                stmt.emit(cw, w)?;
+            for item in &self.body {
+                item.emit(cw, w)?;
             }
         }
+
         cw.outdent();
 
         Ok(())

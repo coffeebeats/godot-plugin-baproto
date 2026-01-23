@@ -101,7 +101,8 @@ fn write_types_section<W: Writer>(
             w,
             &format!(
                 "const {} := preload(\"./{}.gd\")",
-                entry.file_stem, entry.file_stem
+                entry.file_stem,
+                entry.file_stem.to_lowercase()
             ),
         )?;
     }

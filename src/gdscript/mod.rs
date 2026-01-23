@@ -73,7 +73,7 @@ impl Generator for GDScript {
             let pkg_path = pkg_to_path(&pkg.name);
 
             for entry in &entries {
-                let path = format!("{}/{}.gd", pkg_path, entry.file_stem);
+                let path = format!("{}/{}.gd", pkg_path, entry.file_stem.to_lowercase());
                 let mut cw = self.writer.clone();
 
                 let content = match &entry.kind {

@@ -141,7 +141,7 @@ fn resolve_preload_path(
     target_path: &[String],
     current_pkg: &[String],
 ) -> String {
-    let target_stem = target_path.join("_");
+    let target_stem = target_path.join("_").to_lowercase();
 
     if target_pkg == current_pkg {
         // Same package - sibling file.

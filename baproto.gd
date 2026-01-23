@@ -30,9 +30,6 @@ func _enter_tree() -> void:
 	ProjectSetting.binary_path()
 	ProjectSetting.output_directory()
 
-	# Register runtime autoload
-	add_autoload_singleton(NAMESPACE, "./runtime/runtime.gd")
-
 	# Clear platform cache
 	Platform.clear_cache()
 
@@ -48,8 +45,5 @@ func _exit_tree() -> void:
 	if _import_plugin:
 		remove_import_plugin(_import_plugin)
 		_import_plugin = null
-
-	# Remove runtime autoload
-	remove_autoload_singleton(NAMESPACE)
 
 	print("[baproto] Successfully unloaded addon.")

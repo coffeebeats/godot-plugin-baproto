@@ -73,7 +73,7 @@ impl Generator for GDScript {
             let pkg_path = pkg_to_path(&pkg.name);
 
             for entry in &entries {
-                let path = format!("{}/{}.gd", pkg_path, entry.file_stem);
+                let path = format!("{}/{}.gd", pkg_path, entry.file_stem.to_lowercase());
                 let mut cw = self.writer.clone();
 
                 let content = match &entry.kind {
@@ -127,8 +127,9 @@ impl Generator for GDScript {
 
             // Generate mod.gd with both types and subpackages.
             let mut cw = self.writer.clone();
-            let content = namespace::generate_namespace(&mut cw, &pkg_name, &entries, &subpackages)
-                .map_err(|e| GeneratorError::Generation(e.to_string()))?;
+            let content =
+                namespace::generate_namespace(&mut cw, &pkg_name, None, &entries, &subpackages)
+                    .map_err(|e| GeneratorError::Generation(e.to_string()))?;
 
             output.add(format!("{}/mod.gd", pkg_path), content);
         }
@@ -143,8 +144,9 @@ impl Generator for GDScript {
             root_subpackages.sort();
 
             let mut cw = self.writer.clone();
-            let content = namespace::generate_namespace(&mut cw, "", &[], &root_subpackages)
-                .map_err(|e| GeneratorError::Generation(e.to_string()))?;
+            let content =
+                namespace::generate_namespace(&mut cw, "", Some("BAProto"), &[], &root_subpackages)
+                    .map_err(|e| GeneratorError::Generation(e.to_string()))?;
 
             output.add("mod.gd".to_string(), content);
         }
@@ -240,7 +242,7 @@ pub(crate) mod tests {
 
         // Then: Three files should be generated (message + game/mod.gd + root mod.gd).
         assert_eq!(output.files.len(), 3);
-        assert!(output.files.contains_key(Path::new("game/Player.gd")));
+        assert!(output.files.contains_key(Path::new("game/player.gd")));
         assert!(output.files.contains_key(Path::new("game/mod.gd")));
         assert!(output.files.contains_key(Path::new("mod.gd")));
     }
@@ -298,7 +300,7 @@ pub(crate) mod tests {
         let output = gdscript.generate(&schema).unwrap();
 
         // Then: The message file should contain the fields.
-        let content = output.files.get(Path::new("game/Player.gd")).unwrap();
+        let content = output.files.get(Path::new("game/player.gd")).unwrap();
         assert!(content.contains("var health: int = 0"));
         assert!(content.contains("var name: String = \"\""));
         assert!(content.contains("## A player entity."));
@@ -350,11 +352,11 @@ pub(crate) mod tests {
 
         // Then: Three files should be generated (enum + game/mod.gd + root mod.gd).
         assert_eq!(output.files.len(), 3);
-        assert!(output.files.contains_key(Path::new("game/State.gd")));
+        assert!(output.files.contains_key(Path::new("game/state.gd")));
         assert!(output.files.contains_key(Path::new("game/mod.gd")));
         assert!(output.files.contains_key(Path::new("mod.gd")));
 
-        let content = output.files.get(Path::new("game/State.gd")).unwrap();
+        let content = output.files.get(Path::new("game/state.gd")).unwrap();
         assert!(content.contains("const IDLE: int = 0"));
         assert!(content.contains("const MOVING: int = 1"));
     }
@@ -410,23 +412,23 @@ pub(crate) mod tests {
 
         // Then: Four files should be generated (2 types + game/mod.gd + root mod.gd).
         assert_eq!(output.files.len(), 4);
-        assert!(output.files.contains_key(Path::new("game/Player.gd")));
-        assert!(output.files.contains_key(Path::new("game/Player_Stats.gd")));
+        assert!(output.files.contains_key(Path::new("game/player.gd")));
+        assert!(output.files.contains_key(Path::new("game/player_stats.gd")));
         assert!(output.files.contains_key(Path::new("game/mod.gd")));
         assert!(output.files.contains_key(Path::new("mod.gd")));
 
         // The parent should reference the nested type.
-        let player = output.files.get(Path::new("game/Player.gd")).unwrap();
-        assert!(player.contains("const Stats := preload(\"./Player_Stats.gd\")"));
+        let player = output.files.get(Path::new("game/player.gd")).unwrap();
+        assert!(player.contains("const Stats := preload(\"./player_stats.gd\")"));
 
         // The nested type should have the field.
-        let stats = output.files.get(Path::new("game/Player_Stats.gd")).unwrap();
+        let stats = output.files.get(Path::new("game/player_stats.gd")).unwrap();
         assert!(stats.contains("var level: int = 0"));
 
         // The mod.gd should reference both.
         let mod_file = output.files.get(Path::new("game/mod.gd")).unwrap();
-        assert!(mod_file.contains("const Player := preload(\"./Player.gd\")"));
-        assert!(mod_file.contains("const Player_Stats := preload(\"./Player_Stats.gd\")"));
+        assert!(mod_file.contains("const Player := preload(\"./player.gd\")"));
+        assert!(mod_file.contains("const Player_Stats := preload(\"./player_stats.gd\")"));
     }
 
     #[test]
@@ -478,17 +480,17 @@ pub(crate) mod tests {
 
         // Then: Four files should be generated (2 types + game/mod.gd + root mod.gd).
         assert_eq!(output.files.len(), 4);
-        assert!(output.files.contains_key(Path::new("game/Player.gd")));
-        assert!(output.files.contains_key(Path::new("game/Player_State.gd")));
+        assert!(output.files.contains_key(Path::new("game/player.gd")));
+        assert!(output.files.contains_key(Path::new("game/player_state.gd")));
         assert!(output.files.contains_key(Path::new("game/mod.gd")));
         assert!(output.files.contains_key(Path::new("mod.gd")));
 
         // The parent should reference the nested enum.
-        let player = output.files.get(Path::new("game/Player.gd")).unwrap();
-        assert!(player.contains("const State := preload(\"./Player_State.gd\")"));
+        let player = output.files.get(Path::new("game/player.gd")).unwrap();
+        assert!(player.contains("const State := preload(\"./player_state.gd\")"));
 
         // The nested enum should have the constant.
-        let state = output.files.get(Path::new("game/Player_State.gd")).unwrap();
+        let state = output.files.get(Path::new("game/player_state.gd")).unwrap();
         assert!(state.contains("const ACTIVE: int = 0"));
     }
 
@@ -542,10 +544,10 @@ pub(crate) mod tests {
         assert!(
             output
                 .files
-                .contains_key(Path::new("game/player/Player.gd"))
+                .contains_key(Path::new("game/player/player.gd"))
         );
         assert!(output.files.contains_key(Path::new("game/player/mod.gd")));
-        assert!(output.files.contains_key(Path::new("game/enemy/Enemy.gd")));
+        assert!(output.files.contains_key(Path::new("game/enemy/enemy.gd")));
         assert!(output.files.contains_key(Path::new("game/enemy/mod.gd")));
         assert!(output.files.contains_key(Path::new("game/mod.gd")));
         assert!(output.files.contains_key(Path::new("mod.gd")));

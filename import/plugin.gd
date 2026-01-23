@@ -133,6 +133,10 @@ func _import(
 	)
 	save_file.close()
 
+	# Ensure the Godot editor UI refreshes the file system, revealing generated files.
+	var filesystem = EditorInterface.get_resource_filesystem()
+	filesystem.scan()
+
 	return OK
 
 

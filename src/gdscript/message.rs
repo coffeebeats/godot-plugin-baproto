@@ -69,7 +69,11 @@ pub fn generate_message(
                 .unwrap_or(nested_stem);
             cw.writeln(
                 &mut w,
-                &format!("const {} := preload(\"./{}.gd\")", simple_name, nested_stem),
+                &format!(
+                    "const {} := preload(\"./{}.gd\")",
+                    simple_name,
+                    nested_stem.to_lowercase()
+                ),
             )?;
         }
     }
@@ -195,7 +199,7 @@ fn write_private_methods_section<W: Writer>(
 
     // _encode method.
     cw.comment(w, "`_encode` serializes fields to the writer.")?;
-    cw.writeln(w, "func _encode(_writer) -> void:")?;
+    cw.writeln(w, "func _encode(_writer: _Writer) -> void:")?;
     cw.indent();
 
     if fields.is_empty() {
@@ -215,7 +219,7 @@ fn write_private_methods_section<W: Writer>(
 
     // _decode method.
     cw.comment(w, "`_decode` deserializes fields from the reader.")?;
-    cw.writeln(w, "func _decode(_reader) -> void:")?;
+    cw.writeln(w, "func _decode(_reader: _Reader) -> void:")?;
     cw.indent();
 
     if fields.is_empty() {
@@ -251,8 +255,7 @@ fn gen_decode_field(field_name: &str, encoding: &Encoding) -> anyhow::Result<Vec
 
         NativeType::Array { element } => {
             stmts.push(format!("{} = []", field_name));
-            stmts.push("var _len := _reader.read_varint_unsigned()".to_string());
-            stmts.push("for _i in range(_len):".to_string());
+            stmts.push("for _i in range(_reader.read_varint_unsigned()):".to_string());
 
             if matches!(element.native, NativeType::Message { .. }) {
                 let type_str = type_name(&element.native);
@@ -267,8 +270,7 @@ fn gen_decode_field(field_name: &str, encoding: &Encoding) -> anyhow::Result<Vec
 
         NativeType::Map { key, value } => {
             stmts.push(format!("{} = {{}}", field_name));
-            stmts.push("var _len := _reader.read_varint_unsigned()".to_string());
-            stmts.push("for _i in range(_len):".to_string());
+            stmts.push("for _i in range(_reader.read_varint_unsigned()):".to_string());
 
             let key_expr = gen_decode_value(key)?;
             stmts.push(format!("\tvar _key := {}", key_expr));
@@ -986,11 +988,10 @@ mod tests {
         let stmts = gen_decode_field("scores", &encoding).unwrap();
 
         // Then: Output should contain sequential code without inline lambda.
-        assert_eq!(stmts.len(), 4);
+        assert_eq!(stmts.len(), 3);
         assert_eq!(stmts[0], "scores = []");
-        assert_eq!(stmts[1], "var _len := _reader.read_varint_unsigned()");
-        assert_eq!(stmts[2], "for _i in range(_len):");
-        assert_eq!(stmts[3], "\tscores.append(_reader.read_u32())");
+        assert_eq!(stmts[1], "for _i in range(_reader.read_varint_unsigned()):");
+        assert_eq!(stmts[2], "\tscores.append(_reader.read_u32())");
         // Verify no inline lambda patterns.
         assert!(!stmts.join("\n").contains("(func():"));
         assert!(!stmts.join("\n").contains(").call()"));
@@ -1026,12 +1027,11 @@ mod tests {
         let stmts = gen_decode_field("attributes", &encoding).unwrap();
 
         // Then: Output should contain sequential code without inline lambda.
-        assert_eq!(stmts.len(), 5);
+        assert_eq!(stmts.len(), 4);
         assert_eq!(stmts[0], "attributes = {}");
-        assert_eq!(stmts[1], "var _len := _reader.read_varint_unsigned()");
-        assert_eq!(stmts[2], "for _i in range(_len):");
-        assert_eq!(stmts[3], "\tvar _key := _reader.read_string()");
-        assert_eq!(stmts[4], "\tattributes[_key] = _reader.read_i32()");
+        assert_eq!(stmts[1], "for _i in range(_reader.read_varint_unsigned()):");
+        assert_eq!(stmts[2], "\tvar _key := _reader.read_string()");
+        assert_eq!(stmts[3], "\tattributes[_key] = _reader.read_i32()");
         // Verify no inline lambda patterns.
         assert!(!stmts.join("\n").contains("(func():"));
         assert!(!stmts.join("\n").contains(").call()"));
@@ -1052,8 +1052,8 @@ mod tests {
         let result = w.into_content();
 
         // Then: Output should contain empty methods with pass statements.
-        assert!(result.contains("func _encode(_writer) -> void:"));
-        assert!(result.contains("func _decode(_reader) -> void:"));
+        assert!(result.contains("func _encode(_writer: _Writer) -> void:"));
+        assert!(result.contains("func _decode(_reader: _Reader) -> void:"));
         assert!(result.contains("pass"));
     }
 
@@ -1096,10 +1096,10 @@ mod tests {
         let result = w.into_content();
 
         // Then: Output should contain encode/decode methods with field logic.
-        assert!(result.contains("func _encode(_writer) -> void:"));
+        assert!(result.contains("func _encode(_writer: _Writer) -> void:"));
         assert!(result.contains("_writer.write_bool(flag)"));
         assert!(result.contains("_writer.write_u32(id)"));
-        assert!(result.contains("func _decode(_reader) -> void:"));
+        assert!(result.contains("func _decode(_reader: _Reader) -> void:"));
         assert!(result.contains("flag = _reader.read_bool()"));
         assert!(result.contains("id = _reader.read_u32()"));
     }

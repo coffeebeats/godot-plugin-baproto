@@ -23,7 +23,7 @@ var _name: String
 ## setting.
 static func binary_path() -> ProjectSetting:
 	return ProjectSetting.new(
-		"baproto/binary/path",
+		"baproto/binary/path_override",
 		"",
 		false,
 		TYPE_STRING,

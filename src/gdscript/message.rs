@@ -251,8 +251,7 @@ fn gen_decode_field(field_name: &str, encoding: &Encoding) -> anyhow::Result<Vec
 
         NativeType::Array { element } => {
             stmts.push(format!("{} = []", field_name));
-            stmts.push("var _len := _reader.read_varint_unsigned()".to_string());
-            stmts.push("for _i in range(_len):".to_string());
+            stmts.push("for _i in range(_reader.read_varint_unsigned()):".to_string());
 
             if matches!(element.native, NativeType::Message { .. }) {
                 let type_str = type_name(&element.native);
@@ -267,8 +266,7 @@ fn gen_decode_field(field_name: &str, encoding: &Encoding) -> anyhow::Result<Vec
 
         NativeType::Map { key, value } => {
             stmts.push(format!("{} = {{}}", field_name));
-            stmts.push("var _len := _reader.read_varint_unsigned()".to_string());
-            stmts.push("for _i in range(_len):".to_string());
+            stmts.push("for _i in range(_reader.read_varint_unsigned()):".to_string());
 
             let key_expr = gen_decode_value(key)?;
             stmts.push(format!("\tvar _key := {}", key_expr));
@@ -988,8 +986,7 @@ mod tests {
         // Then: Output should contain sequential code without inline lambda.
         assert_eq!(stmts.len(), 4);
         assert_eq!(stmts[0], "scores = []");
-        assert_eq!(stmts[1], "var _len := _reader.read_varint_unsigned()");
-        assert_eq!(stmts[2], "for _i in range(_len):");
+        assert_eq!(stmts[2], "for _i in range(_reader.read_varint_unsigned()):");
         assert_eq!(stmts[3], "\tscores.append(_reader.read_u32())");
         // Verify no inline lambda patterns.
         assert!(!stmts.join("\n").contains("(func():"));

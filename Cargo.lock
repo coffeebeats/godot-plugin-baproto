@@ -118,6 +118,7 @@ dependencies = [
  "anyhow",
  "baproto",
  "clap",
+ "derive_builder",
  "serde",
  "serde_json",
 ]

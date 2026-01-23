@@ -223,8 +223,8 @@ mod tests {
         let result = generate_namespace(&mut cw, "game", None, &entries, &subpackages).unwrap();
 
         // Then: Output should contain type preloads.
-        assert!(result.contains("const Player := preload(\"./Player.gd\")"));
-        assert!(result.contains("const State := preload(\"./State.gd\")"));
+        assert!(result.contains("const Player := preload(\"./player.gd\")"));
+        assert!(result.contains("const State := preload(\"./state.gd\")"));
     }
 
     #[test]
@@ -272,8 +272,8 @@ mod tests {
         let result = generate_namespace(&mut cw, "game", None, &entries, &subpackages).unwrap();
 
         // Then: Output should contain all type preloads including nested.
-        assert!(result.contains("const Player := preload(\"./Player.gd\")"));
-        assert!(result.contains("const Player_Stats := preload(\"./Player_Stats.gd\")"));
+        assert!(result.contains("const Player := preload(\"./player.gd\")"));
+        assert!(result.contains("const Player_Stats := preload(\"./player_stats.gd\")"));
     }
 
     #[test]
@@ -320,7 +320,7 @@ mod tests {
 
         // Then: Output should contain both subpackage and type preloads.
         assert!(result.contains("const player := preload(\"./player/mod.gd\")"));
-        assert!(result.contains("const Common := preload(\"./Common.gd\")"));
+        assert!(result.contains("const Common := preload(\"./common.gd\")"));
         // PACKAGES should come before TYPES.
         let packages_pos = result.find("-- PACKAGES").unwrap();
         let types_pos = result.find("-- TYPES").unwrap();

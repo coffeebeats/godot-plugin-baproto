@@ -404,7 +404,7 @@ mod tests {
         let result = resolve_preload_path(&target_pkg, &target_path, &current_pkg);
 
         // Then: It should be a relative path to sibling file.
-        assert_eq!(result, "./Inventory.gd");
+        assert_eq!(result, "./inventory.gd");
     }
 
     #[test]
@@ -418,7 +418,7 @@ mod tests {
         let result = resolve_preload_path(&target_pkg, &target_path, &current_pkg);
 
         // Then: It should use relative path with parent traversal.
-        assert_eq!(result, "../../other/pkg/Inventory.gd");
+        assert_eq!(result, "../../other/pkg/inventory.gd");
     }
 
     /* ------------------------ Tests: escape_keyword ----------------------- */

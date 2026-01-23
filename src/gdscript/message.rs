@@ -69,7 +69,11 @@ pub fn generate_message(
                 .unwrap_or(nested_stem);
             cw.writeln(
                 &mut w,
-                &format!("const {} := preload(\"./{}.gd\")", simple_name, nested_stem),
+                &format!(
+                    "const {} := preload(\"./{}.gd\")",
+                    simple_name,
+                    nested_stem.to_lowercase()
+                ),
             )?;
         }
     }
@@ -984,10 +988,10 @@ mod tests {
         let stmts = gen_decode_field("scores", &encoding).unwrap();
 
         // Then: Output should contain sequential code without inline lambda.
-        assert_eq!(stmts.len(), 4);
+        assert_eq!(stmts.len(), 3);
         assert_eq!(stmts[0], "scores = []");
-        assert_eq!(stmts[2], "for _i in range(_reader.read_varint_unsigned()):");
-        assert_eq!(stmts[3], "\tscores.append(_reader.read_u32())");
+        assert_eq!(stmts[1], "for _i in range(_reader.read_varint_unsigned()):");
+        assert_eq!(stmts[2], "\tscores.append(_reader.read_u32())");
         // Verify no inline lambda patterns.
         assert!(!stmts.join("\n").contains("(func():"));
         assert!(!stmts.join("\n").contains(").call()"));
@@ -1023,12 +1027,11 @@ mod tests {
         let stmts = gen_decode_field("attributes", &encoding).unwrap();
 
         // Then: Output should contain sequential code without inline lambda.
-        assert_eq!(stmts.len(), 5);
+        assert_eq!(stmts.len(), 4);
         assert_eq!(stmts[0], "attributes = {}");
-        assert_eq!(stmts[1], "var _len := _reader.read_varint_unsigned()");
-        assert_eq!(stmts[2], "for _i in range(_len):");
-        assert_eq!(stmts[3], "\tvar _key := _reader.read_string()");
-        assert_eq!(stmts[4], "\tattributes[_key] = _reader.read_i32()");
+        assert_eq!(stmts[1], "for _i in range(_reader.read_varint_unsigned()):");
+        assert_eq!(stmts[2], "\tvar _key := _reader.read_string()");
+        assert_eq!(stmts[3], "\tattributes[_key] = _reader.read_i32()");
         // Verify no inline lambda patterns.
         assert!(!stmts.join("\n").contains("(func():"));
         assert!(!stmts.join("\n").contains(").call()"));
@@ -1049,8 +1052,8 @@ mod tests {
         let result = w.into_content();
 
         // Then: Output should contain empty methods with pass statements.
-        assert!(result.contains("func _encode(_writer) -> void:"));
-        assert!(result.contains("func _decode(_reader) -> void:"));
+        assert!(result.contains("func _encode(_writer: _Writer) -> void:"));
+        assert!(result.contains("func _decode(_reader: _Reader) -> void:"));
         assert!(result.contains("pass"));
     }
 
@@ -1093,10 +1096,10 @@ mod tests {
         let result = w.into_content();
 
         // Then: Output should contain encode/decode methods with field logic.
-        assert!(result.contains("func _encode(_writer) -> void:"));
+        assert!(result.contains("func _encode(_writer: _Writer) -> void:"));
         assert!(result.contains("_writer.write_bool(flag)"));
         assert!(result.contains("_writer.write_u32(id)"));
-        assert!(result.contains("func _decode(_reader) -> void:"));
+        assert!(result.contains("func _decode(_reader: _Reader) -> void:"));
         assert!(result.contains("flag = _reader.read_bool()"));
         assert!(result.contains("id = _reader.read_u32()"));
     }

@@ -195,7 +195,7 @@ fn write_private_methods_section<W: Writer>(
 
     // _encode method.
     cw.comment(w, "`_encode` serializes fields to the writer.")?;
-    cw.writeln(w, "func _encode(_writer) -> void:")?;
+    cw.writeln(w, "func _encode(_writer: _Writer) -> void:")?;
     cw.indent();
 
     if fields.is_empty() {
@@ -215,7 +215,7 @@ fn write_private_methods_section<W: Writer>(
 
     // _decode method.
     cw.comment(w, "`_decode` deserializes fields from the reader.")?;
-    cw.writeln(w, "func _decode(_reader) -> void:")?;
+    cw.writeln(w, "func _decode(_reader: _Reader) -> void:")?;
     cw.indent();
 
     if fields.is_empty() {

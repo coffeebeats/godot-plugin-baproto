@@ -10,8 +10,6 @@ use super::Emit;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Expr {
-    /// `Raw` is an arbitrary expression.
-    Raw(String),
     /// `FnCall` is a function call expression.
     FnCall(FnCall),
     /// `FieldAccess` is a property access expression.
@@ -22,6 +20,43 @@ pub enum Expr {
     IndexAccess(IndexAccess),
     /// `Literal` is a type-safe literal value.
     Literal(Literal),
+    /// `Raw` is an arbitrary expression.
+    Raw(String),
+}
+
+/* ------------------------------- Impl: Expr ------------------------------- */
+
+impl Expr {
+    /// `ident` creates an identifer expression.
+    pub fn ident<T: AsRef<str>>(name: T) -> Expr {
+        Expr::Identifier(name.as_ref().into())
+    }
+
+    /// `field` creates a field access expression.
+    pub fn field<T: Into<Expr>, U: AsRef<str>>(receiver: T, field: U) -> Expr {
+        Expr::FieldAccess(FieldAccess {
+            receiver: Box::new(receiver.into()),
+            field: field.as_ref().to_string(),
+        })
+    }
+
+    /// `index` creates an index access expression.
+    pub fn index<T: Into<Expr>, U: Into<Expr>>(receiver: T, index: U) -> Expr {
+        Expr::IndexAccess(IndexAccess {
+            receiver: Box::new(receiver.into()),
+            index: Box::new(index.into()),
+        })
+    }
+
+    /// `empty_array` creates an empty array literal.
+    pub fn empty_array() -> Expr {
+        Expr::Literal(Literal::Array(vec![]))
+    }
+
+    /// `empty_dict` creates an empty dict literal.
+    pub fn empty_dict() -> Expr {
+        Expr::Literal(Literal::Dict(vec![]))
+    }
 }
 
 /* ------------------------- Impl: From<AsRef<str>> ------------------------- */
@@ -132,14 +167,14 @@ impl Emit for IndexAccess {
 /* -------------------------------------------------------------------------- */
 
 /// `Literal` represents a type-safe GDScript literal value.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum Literal {
     /// `Bool` is a boolean literal.
     Bool(bool),
     /// `Int` is an integer literal.
     Int(i64),
     /// `Float` is a floating-point literal.
-    Float(f64),
+    Float(f32),
     /// `String` is a string literal.
     String(String),
     /// `Array` is an array literal.
@@ -148,19 +183,51 @@ pub enum Literal {
     Dict(Vec<(Expr, Expr)>),
 }
 
-/* ---------------------------- Impl: PartialEq ----------------------------- */
+/* ---------------------------- Impl: From<bool> ---------------------------- */
 
-impl PartialEq for Literal {
-    fn eq(&self, other: &Self) -> bool {
-        match (self, other) {
-            (Self::Bool(a), Self::Bool(b)) => a == b,
-            (Self::Int(a), Self::Int(b)) => a == b,
-            (Self::Float(a), Self::Float(b)) => a.to_bits() == b.to_bits(),
-            (Self::String(a), Self::String(b)) => a == b,
-            (Self::Array(a), Self::Array(b)) => a == b,
-            (Self::Dict(a), Self::Dict(b)) => a == b,
-            _ => false,
-        }
+impl From<bool> for Literal {
+    fn from(value: bool) -> Self {
+        Self::Bool(value)
+    }
+}
+
+/* ----------------------------- Impl: From<i64> ---------------------------- */
+
+impl From<i64> for Literal {
+    fn from(value: i64) -> Self {
+        Self::Int(value)
+    }
+}
+
+/* ----------------------------- Impl: From<f32> ---------------------------- */
+
+impl From<f32> for Literal {
+    fn from(value: f32) -> Self {
+        Self::Float(value)
+    }
+}
+
+/* --------------------------- Impl: From<String> --------------------------- */
+
+impl From<String> for Literal {
+    fn from(value: String) -> Self {
+        Self::String(value)
+    }
+}
+
+/* ---------------------------- Impl: From<&str> ---------------------------- */
+
+impl From<&str> for Literal {
+    fn from(value: &str) -> Self {
+        Self::String(value.to_string())
+    }
+}
+
+/* -------------------------- Impl: From<Vec<Expr>> ------------------------- */
+
+impl From<Vec<Expr>> for Literal {
+    fn from(value: Vec<Expr>) -> Self {
+        Self::Array(value)
     }
 }
 
@@ -206,7 +273,7 @@ impl Emit for Literal {
 /* -------------------------------------------------------------------------- */
 
 /// `FnCall` is a function call expression.
-#[derive(Clone, Debug, PartialEq, Builder)]
+#[derive(Builder, Clone, Debug, PartialEq)]
 #[builder(setter(into))]
 pub struct FnCall {
     /// `receiver` is an object on which the target function is defined.
@@ -220,6 +287,41 @@ pub struct FnCall {
     /// `args` is the set of function arguments.
     #[builder(default)]
     pub args: Vec<Expr>,
+}
+
+/* ------------------------------ Impl: FnCall ------------------------------ */
+
+impl FnCall {
+    /// `method` creates a function call [`Expr`] on the provided receiver. To
+    /// call a method with arguments, see [`FnCall::method_args`].
+    pub fn method<T, U>(receiver: T, name: U) -> Expr
+    where
+        T: Into<Expr>,
+        U: AsRef<str>,
+    {
+        FnCall {
+            args: Vec::default(),
+            name: name.as_ref().to_owned(),
+            receiver: Some(Box::new(receiver.into())),
+        }
+        .into()
+    }
+
+    /// `method` creates a function call [`Expr`] on the provided receiver. To
+    /// call a method without arguments, see [`FnCall::method`].
+    pub fn method_args<T, U, V>(receiver: T, name: U, args: Vec<V>) -> Expr
+    where
+        T: Into<Expr>,
+        U: AsRef<str>,
+        V: Into<Expr>,
+    {
+        FnCall {
+            args: args.into_iter().map(|i| i.into()).collect(),
+            name: name.as_ref().to_owned(),
+            receiver: Some(Box::new(receiver.into())),
+        }
+        .into()
+    }
 }
 
 /* ------------------------------- Impl: Emit ------------------------------- */

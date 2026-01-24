@@ -5,6 +5,7 @@ use derive_builder::Builder;
 
 use super::Comment;
 use super::Emit;
+use super::Expr;
 
 /* -------------------------------------------------------------------------- */
 /*                            Struct: Assignment                              */
@@ -28,7 +29,7 @@ pub struct Assignment {
     pub name: String,
 
     /// `type_hint` is an optional type hint associated with the declaration.
-    #[builder(default, setter(into, strip_option))]
+    #[builder(default = Some(TypeHint::Infer), setter(into, strip_option))]
     pub type_hint: Option<TypeHint>,
 
     /// `value` is an optional value assigned to the declared variable.
@@ -67,7 +68,15 @@ pub enum ValueKind {
     /// `Preload` is a preload statement for the specified file.
     Preload(PathBuf),
     /// `Expr` is a structured expression on the right-hand side.
-    Expr(Box<super::Expr>),
+    Expr(Expr),
+}
+
+/* ---------------------------- Impl: From<Expr> ---------------------------- */
+
+impl From<Expr> for ValueKind {
+    fn from(value: Expr) -> Self {
+        Self::Expr(value)
+    }
 }
 
 /* ----------------------------- Enum: TypeHint ----------------------------- */
@@ -256,9 +265,7 @@ mod tests {
             .name("items".to_string())
             .declaration(DeclarationKind::Var)
             .type_hint(TypeHint::Infer)
-            .value(ValueKind::Expr(Box::new(Expr::Literal(Literal::Array(
-                vec![],
-            )))))
+            .value(ValueKind::Expr(Expr::Literal(Literal::Array(vec![]))))
             .build()
             .unwrap();
 

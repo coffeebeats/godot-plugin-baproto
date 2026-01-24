@@ -76,6 +76,14 @@ impl From<Assignment> for Item {
     }
 }
 
+/* ---------------------------- Impl: From<Expr> ---------------------------- */
+
+impl From<Expr> for Item {
+    fn from(value: Expr) -> Self {
+        Self::Expr(value)
+    }
+}
+
 /* ---------------------------- Impl: From<ForIn> --------------------------- */
 
 impl From<ForIn> for Item {

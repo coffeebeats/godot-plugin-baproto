@@ -5,6 +5,7 @@ use derive_builder::Builder;
 use super::Assignment;
 use super::Comment;
 use super::Emit;
+use super::Expr;
 use super::Item;
 use super::TypeHint;
 
@@ -17,7 +18,7 @@ use super::TypeHint;
 #[builder(setter(into))]
 pub struct FnDef {
     /// `comment` is a doc comment for the function.
-    #[builder(default, setter(into, strip_option))]
+    #[builder(default, setter(strip_option))]
     pub comment: Option<Comment>,
 
     /// `name` is the name of the function.
@@ -34,6 +35,11 @@ pub struct FnDef {
     /// `body` is the function's contents.
     #[builder(default)]
     pub body: Block,
+
+    /// `return_value` is an optional return expression at the end of the
+    /// function. Migrate this to [`Item`] if multiple return support is needed.
+    #[builder(default, setter(into, strip_option))]
+    pub return_value: Option<Expr>,
 }
 
 /* ------------------------------- Impl: Emit ------------------------------- */
@@ -59,6 +65,16 @@ impl Emit for FnDef {
 
         self.body.emit(cw, w)?;
 
+        if let Some(return_expr) = &self.return_value {
+            cw.indent();
+
+            cw.write(w, &format!("{}return ", cw.get_indent()))?;
+            return_expr.emit(cw, w)?;
+
+            cw.outdent();
+            cw.newline(w)?;
+        }
+
         Ok(())
     }
 }
@@ -72,6 +88,14 @@ impl Emit for FnDef {
 #[derive(Clone, Debug, Default)]
 pub struct Block {
     pub body: Vec<Item>,
+}
+
+/* -------------------------- Impl: From<Vec<Item>> ------------------------- */
+
+impl From<Vec<Item>> for Block {
+    fn from(items: Vec<Item>) -> Self {
+        Block { body: items }
+    }
 }
 
 /* ------------------------------- Impl: Emit ------------------------------- */
@@ -102,6 +126,8 @@ impl Emit for Block {
 mod tests {
     use baproto::StringWriter;
 
+    use crate::gdscript::GDScript;
+
     use super::*;
 
     /* ---------------------------- Tests: Block ---------------------------- */
@@ -112,7 +138,7 @@ mod tests {
         let mut s = StringWriter::default();
 
         // Given: A code writer to write with.
-        let mut cw = CodeWriter::default();
+        let mut cw = GDScript::writer();
 
         // Given: An empty block.
         let block = Block::default();
@@ -135,7 +161,7 @@ mod tests {
         let mut s = StringWriter::default();
 
         // Given: A code writer to write with.
-        let mut cw = CodeWriter::default();
+        let mut cw = GDScript::writer();
 
         // Given: A function with no parameters or return type.
         let func = FnDef {
@@ -144,6 +170,7 @@ mod tests {
             params: vec![],
             type_hint: None,
             body: Block::default(),
+            return_value: None,
         };
 
         // When: The function is serialized to source code.
@@ -162,7 +189,7 @@ mod tests {
         let mut s = StringWriter::default();
 
         // Given: A code writer to write with.
-        let mut cw = CodeWriter::default();
+        let mut cw = GDScript::writer();
 
         // Given: A function with parameters.
         let func = FnDef {
@@ -182,6 +209,7 @@ mod tests {
             ],
             type_hint: None,
             body: Block::default(),
+            return_value: None,
         };
 
         // When: The function is serialized to source code.
@@ -200,7 +228,7 @@ mod tests {
         let mut s = StringWriter::default();
 
         // Given: A code writer to write with.
-        let mut cw = CodeWriter::default();
+        let mut cw = GDScript::writer();
 
         // Given: A function with explicit return type.
         let func = FnDef {
@@ -209,6 +237,7 @@ mod tests {
             params: vec![],
             type_hint: Some(TypeHint::Explicit("int".to_string())),
             body: Block::default(),
+            return_value: None,
         };
 
         // When: The function is serialized to source code.
@@ -219,5 +248,38 @@ mod tests {
 
         // Then: The output matches expectations.
         assert_eq!(s.into_content(), "func get_value() -> int:\n\tpass\n");
+    }
+
+    #[test]
+    fn test_fn_def_with_return_value() {
+        use crate::gdscript::ast::{Expr, Literal};
+
+        // Given: A string to write to.
+        let mut s = StringWriter::default();
+
+        // Given: A code writer to write with.
+        let mut cw = GDScript::writer();
+
+        // Given: A function with a return value.
+        let func = FnDef {
+            comment: None,
+            name: "get_five".to_string(),
+            params: vec![],
+            type_hint: Some(TypeHint::Explicit("int".to_string())),
+            body: Block::default(),
+            return_value: Some(Expr::Literal(Literal::Int(5))),
+        };
+
+        // When: The function is serialized to source code.
+        let result = func.emit(&mut cw, &mut s);
+
+        // Then: There was no error.
+        assert!(result.is_ok());
+
+        // Then: The output matches expectations.
+        assert_eq!(
+            s.into_content(),
+            "func get_five() -> int:\n\tpass\n\treturn 5\n"
+        );
     }
 }

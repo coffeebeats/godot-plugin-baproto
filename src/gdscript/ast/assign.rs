@@ -16,6 +16,7 @@ use super::Emit;
 #[derive(Builder, Clone, Debug, Default)]
 pub struct Assignment {
     /// `comment` is an optional doc comment associated with the assignment.
+    #[builder(default, setter(strip_option))]
     pub comment: Option<Comment>,
 
     /// `declaration` is the declaration keyword used.
@@ -23,6 +24,7 @@ pub struct Assignment {
     pub declaration: Option<DeclarationKind>,
 
     /// `name` is the name of the declared variable.
+    #[builder(setter(into))]
     pub name: String,
 
     /// `type_hint` is an optional type hint associated with the declaration.
@@ -30,7 +32,7 @@ pub struct Assignment {
     pub type_hint: Option<TypeHint>,
 
     /// `value` is an optional value assigned to the declared variable.
-    #[builder(setter(into, strip_option))]
+    #[builder(default, setter(into, strip_option))]
     pub value: Option<ValueKind>,
 }
 
@@ -64,6 +66,8 @@ pub enum ValueKind {
     Raw(String),
     /// `Preload` is a preload statement for the specified file.
     Preload(PathBuf),
+    /// `Expr` is a structured expression on the right-hand side.
+    Expr(Box<super::Expr>),
 }
 
 /* ----------------------------- Enum: TypeHint ----------------------------- */
@@ -103,6 +107,11 @@ impl Emit for Assignment {
             None => todo!(),
             Some(ValueKind::Raw(s)) => cw.write(w, &format!(" {}", s)),
             Some(ValueKind::Preload(p)) => cw.write(w, &format!(" preload(\"{}\")", p.display())),
+            Some(ValueKind::Expr(expr)) => {
+                cw.write(w, " ")?;
+                expr.emit(cw, w)?;
+                Ok(())
+            }
         }?;
 
         Ok(())
@@ -117,6 +126,8 @@ impl Emit for Assignment {
 mod tests {
     use baproto::StringWriter;
 
+    use crate::gdscript::GDScript;
+
     use super::*;
 
     /* -------------------------- Tests: Assignment ------------------------- */
@@ -127,7 +138,7 @@ mod tests {
         let mut s = StringWriter::default();
 
         // Given: A code writer to write with.
-        let mut cw = CodeWriter::default();
+        let mut cw = GDScript::writer();
 
         // Given: A var assignment with a raw value.
         let assignment = Assignment::builder()
@@ -153,7 +164,7 @@ mod tests {
         let mut s = StringWriter::default();
 
         // Given: A code writer to write with.
-        let mut cw = CodeWriter::default();
+        let mut cw = GDScript::writer();
 
         // Given: A const assignment with a preload value.
         let assignment = Assignment::builder()
@@ -182,7 +193,7 @@ mod tests {
         let mut s = StringWriter::default();
 
         // Given: A code writer to write with.
-        let mut cw = CodeWriter::default();
+        let mut cw = GDScript::writer();
 
         // Given: An assignment with inferred type hint.
         let assignment = Assignment::builder()
@@ -209,7 +220,7 @@ mod tests {
         let mut s = StringWriter::default();
 
         // Given: A code writer to write with.
-        let mut cw = CodeWriter::default();
+        let mut cw = GDScript::writer();
 
         // Given: An assignment with explicit type hint.
         let assignment = Assignment::builder()
@@ -228,5 +239,36 @@ mod tests {
 
         // Then: The output matches expectations.
         assert_eq!(s.into_content(), "var count: int = 0");
+    }
+
+    #[test]
+    fn test_assignment_with_expr_value() {
+        use crate::gdscript::ast::{Expr, Literal};
+
+        // Given: A string to write to.
+        let mut s = StringWriter::default();
+
+        // Given: A code writer to write with.
+        let mut cw = GDScript::writer();
+
+        // Given: An assignment with structured expression value.
+        let assignment = Assignment::builder()
+            .name("items".to_string())
+            .declaration(DeclarationKind::Var)
+            .type_hint(TypeHint::Infer)
+            .value(ValueKind::Expr(Box::new(Expr::Literal(Literal::Array(
+                vec![],
+            )))))
+            .build()
+            .unwrap();
+
+        // When: The assignment is serialized to source code.
+        let result = assignment.emit(&mut cw, &mut s);
+
+        // Then: There was no error.
+        assert!(result.is_ok());
+
+        // Then: The output matches expectations.
+        assert_eq!(s.into_content(), "var items := []");
     }
 }

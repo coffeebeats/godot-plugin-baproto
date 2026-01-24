@@ -18,14 +18,14 @@ pub struct Script {
     pub header: Option<Comment>,
 
     /// `comment` is a doc comment for the class.
-    #[builder(setter(into, strip_option))]
+    #[builder(default, setter(strip_option))]
     pub comment: Option<Comment>,
 
     /// `extends` is the GDScript class that this class inherits from.
     pub extends: String,
 
     /// `class_name` is a global name for the class.
-    #[builder(setter(into, strip_option))]
+    #[builder(default, setter(into, strip_option))]
     pub class_name: Option<String>,
 
     /// `sections` is the content of the script file.
@@ -49,7 +49,7 @@ impl Emit for Script {
     fn emit<W: Writer>(&self, cw: &mut CodeWriter, w: &mut W) -> anyhow::Result<()> {
         if let Some(comment) = self.header.as_ref() {
             comment.emit(cw, w)?;
-            cw.blank_line(w)?;
+            cw.newline(w)?;
         }
 
         if let Some(comment) = self.comment.as_ref() {
@@ -112,6 +112,8 @@ impl Emit for Section {
 mod tests {
     use baproto::StringWriter;
 
+    use crate::gdscript::GDScript;
+
     use super::*;
 
     /* --------------------------- Tests: Section --------------------------- */
@@ -122,7 +124,7 @@ mod tests {
         let mut s = StringWriter::default();
 
         // Given: A code writer to write with.
-        let mut cw = CodeWriter::default();
+        let mut cw = GDScript::writer();
 
         // Given: A section with empty body.
         let section = Section {
@@ -137,7 +139,7 @@ mod tests {
         assert!(result.is_ok());
 
         // Then: The output matches expectations.
-        let expected = format!("# -- Constants {} #\n\n\n", "-".repeat(61));
+        let expected = format!("# -- Constants {} #\n\n\n", "-".repeat(71));
         assert_eq!(s.into_content(), expected);
     }
 
@@ -149,7 +151,7 @@ mod tests {
         let mut s = StringWriter::default();
 
         // Given: A code writer to write with.
-        let mut cw = CodeWriter::default();
+        let mut cw = GDScript::writer();
 
         // Given: A minimal script.
         let script = Script {
@@ -176,7 +178,7 @@ mod tests {
         let mut s = StringWriter::default();
 
         // Given: A code writer to write with.
-        let mut cw = CodeWriter::default();
+        let mut cw = GDScript::writer();
 
         // Given: A script with class name.
         let script = Script {
@@ -194,7 +196,10 @@ mod tests {
         assert!(result.is_ok());
 
         // Then: The output matches expectations.
-        assert_eq!(s.into_content(), "class_name MyResource\nextends Resource\n\n");
+        assert_eq!(
+            s.into_content(),
+            "class_name MyResource\nextends Resource\n\n"
+        );
     }
 
     #[test]
@@ -203,7 +208,7 @@ mod tests {
         let mut s = StringWriter::default();
 
         // Given: A code writer to write with.
-        let mut cw = CodeWriter::default();
+        let mut cw = GDScript::writer();
 
         // Given: A script with default generated warning.
         let script = ScriptBuilder::default()

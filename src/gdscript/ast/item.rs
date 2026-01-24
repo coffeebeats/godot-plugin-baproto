@@ -1,49 +1,10 @@
 use baproto::{CodeWriter, Writer};
 
-/* ------------------------------- Mod: Assign ------------------------------ */
-
-mod assign;
-pub use assign::*;
-
-/* ------------------------------ Mod: Comment ------------------------------ */
-
-mod comment;
-pub use comment::*;
-
-/* ------------------------------ Mod: Control ------------------------------ */
-
-mod control;
-pub use control::*;
-
-/* -------------------------------- Mod: Expr ------------------------------- */
-
-mod expr;
-pub use expr::*;
-
-/* ------------------------------ Mod: Function ----------------------------- */
-
-mod function;
-pub use function::*;
-
-/* -------------------------------- Mod: Item ------------------------------- */
-
-mod item;
-pub use item::*;
-
-/* -------------------------------- Mod: Script ------------------------------- */
-
-mod script;
-pub use script::*;
-
-/* -------------------------------------------------------------------------- */
-/*                                Trait: Emit                                 */
-/* -------------------------------------------------------------------------- */
-
-/// `Emit` writes a GDScript construct to a `CodeWriter`.
-#[allow(dead_code)]
-pub trait Emit {
-    fn emit<W: Writer>(&self, cw: &mut CodeWriter, w: &mut W) -> anyhow::Result<()>;
-}
+use super::Assignment;
+use super::Expr;
+use super::FnDef;
+use super::ForIn;
+use super::If;
 
 /* -------------------------------------------------------------------------- */
 /*                                 Enum: Item                                 */
@@ -94,7 +55,7 @@ impl From<If> for Item {
 
 /* ------------------------------- Impl: Emit ------------------------------- */
 
-impl Emit for Item {
+impl super::Emit for Item {
     fn emit<W: Writer>(&self, cw: &mut CodeWriter, w: &mut W) -> anyhow::Result<()> {
         match self {
             Item::Expr(expr) => expr.emit(cw, w),

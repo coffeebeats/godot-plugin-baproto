@@ -8,10 +8,13 @@ use super::{Block, Emit, Expr};
 /* -------------------------------------------------------------------------- */
 
 /// `ForIn` represents a for-in loop.
-#[derive(Clone, Debug)]
+#[derive(Builder, Clone, Debug)]
 pub struct ForIn {
+    #[builder(setter(into))]
     pub variable: String,
+    #[builder(setter(into))]
     pub iterable: Expr,
+    #[builder(default, setter(into))]
     pub body: Block,
 }
 
@@ -21,7 +24,8 @@ impl Emit for ForIn {
     fn emit<W: Writer>(&self, cw: &mut CodeWriter, w: &mut W) -> anyhow::Result<()> {
         cw.write(w, &format!("for {} in ", self.variable))?;
         self.iterable.emit(cw, w)?;
-        cw.writeln(w, ":")?;
+        cw.write(w, ":")?;
+        cw.newline(w)?;
 
         self.body.emit(cw, w)
     }
@@ -36,7 +40,9 @@ impl Emit for ForIn {
 pub struct If {
     #[builder(setter(into))]
     pub condition: Expr,
+    #[builder(default)]
     pub then_body: Block,
+    #[builder(default, setter(strip_option))]
     pub else_body: Option<Block>,
 }
 
@@ -47,6 +53,7 @@ impl Emit for If {
         cw.write(w, "if ")?;
         self.condition.emit(cw, w)?;
         cw.write(w, ":")?;
+        cw.newline(w)?;
 
         self.then_body.emit(cw, w)?;
 
@@ -67,6 +74,8 @@ impl Emit for If {
 mod tests {
     use baproto::StringWriter;
 
+    use crate::gdscript::GDScript;
+
     use super::*;
 
     /* ------------------------------ Tests: If ----------------------------- */
@@ -77,14 +86,13 @@ mod tests {
         let mut s = StringWriter::default();
 
         // Given: A code writer to write with.
-        let mut cw = CodeWriter::default();
+        let mut cw = GDScript::writer();
 
         // Given: An if statement without else.
-        let if_stmt = If {
-            condition: Expr::Raw("x > 0".to_string()),
-            then_body: Block::default(),
-            else_body: None,
-        };
+        let if_stmt = IfBuilder::default()
+            .condition(Expr::from("x > 0"))
+            .build()
+            .unwrap();
 
         // When: The if statement is serialized to source code.
         let result = if_stmt.emit(&mut cw, &mut s);
@@ -102,14 +110,14 @@ mod tests {
         let mut s = StringWriter::default();
 
         // Given: A code writer to write with.
-        let mut cw = CodeWriter::default();
+        let mut cw = GDScript::writer();
 
         // Given: An if statement with else.
-        let if_stmt = If {
-            condition: Expr::Raw("ready".to_string()),
-            then_body: Block::default(),
-            else_body: Some(Block::default()),
-        };
+        let if_stmt = IfBuilder::default()
+            .condition(Expr::from("ready"))
+            .else_body(Block::default())
+            .build()
+            .unwrap();
 
         // When: The if statement is serialized to source code.
         let result = if_stmt.emit(&mut cw, &mut s);
@@ -129,14 +137,14 @@ mod tests {
         let mut s = StringWriter::default();
 
         // Given: A code writer to write with.
-        let mut cw = CodeWriter::default();
+        let mut cw = GDScript::writer();
 
         // Given: A for-in loop.
-        let for_loop = ForIn {
-            variable: "item".to_string(),
-            iterable: Expr::Raw("items".to_string()),
-            body: Block::default(),
-        };
+        let for_loop = ForInBuilder::default()
+            .variable("item")
+            .iterable(Expr::from("items"))
+            .build()
+            .unwrap();
 
         // When: The for loop is serialized to source code.
         let result = for_loop.emit(&mut cw, &mut s);

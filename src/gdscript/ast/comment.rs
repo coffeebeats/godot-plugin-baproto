@@ -59,7 +59,7 @@ impl Emit for SectionHeader {
             &format!(
                 "# -- {} {} #",
                 self.title,
-                "-".repeat(88 - self.title.len() - 4 * cw.indent_level() - 7)
+                "-".repeat(88 - self.title.len() - 4 * cw.indent_level() - 8)
             ),
         )
     }
@@ -73,6 +73,8 @@ impl Emit for SectionHeader {
 mod tests {
     use baproto::StringWriter;
 
+    use crate::gdscript::GDScript;
+
     use super::*;
 
     /* ----------------------- Tests: SectionHeader ------------------------- */
@@ -83,7 +85,7 @@ mod tests {
         let mut s = StringWriter::default();
 
         // Given: A code writer to write with.
-        let mut cw = CodeWriter::default();
+        let mut cw = GDScript::writer();
 
         // Given: A section with a short name.
         let section = SectionHeader::from("test");
@@ -95,7 +97,10 @@ mod tests {
         assert!(header.is_ok());
 
         // Then: The comment matches expectations.
-        assert_eq!(s.into_content(), format!("# -- test {} #", "-".repeat(67)));
+        assert_eq!(
+            s.into_content(),
+            format!("# -- test {} #\n", "-".repeat(76))
+        );
     }
 
     /* -------------------------- Tests: Comment ---------------------------- */
@@ -106,7 +111,7 @@ mod tests {
         let mut s = StringWriter::default();
 
         // Given: A code writer to write with.
-        let mut cw = CodeWriter::default();
+        let mut cw = GDScript::writer();
 
         // Given: A single-line comment.
         let comment = Comment::from("This is a comment");
@@ -118,7 +123,7 @@ mod tests {
         assert!(result.is_ok());
 
         // Then: The output matches expectations.
-        assert_eq!(s.into_content(), "# This is a comment\n");
+        assert_eq!(s.into_content(), "## This is a comment\n");
     }
 
     #[test]
@@ -127,7 +132,7 @@ mod tests {
         let mut s = StringWriter::default();
 
         // Given: A code writer to write with.
-        let mut cw = CodeWriter::default();
+        let mut cw = GDScript::writer();
 
         // Given: A multi-line comment.
         let comment = Comment {
@@ -147,7 +152,7 @@ mod tests {
         // Then: The output matches expectations.
         assert_eq!(
             s.into_content(),
-            "# First line\n# Second line\n# Third line\n"
+            "## First line\n## Second line\n## Third line\n"
         );
     }
 }

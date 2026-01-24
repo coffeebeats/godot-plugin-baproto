@@ -93,3 +93,131 @@ impl Emit for Block {
         Ok(())
     }
 }
+
+/* -------------------------------------------------------------------------- */
+/*                                 Mod: Tests                                 */
+/* -------------------------------------------------------------------------- */
+
+#[cfg(test)]
+mod tests {
+    use baproto::StringWriter;
+
+    use super::*;
+
+    /* ---------------------------- Tests: Block ---------------------------- */
+
+    #[test]
+    fn test_block_empty() {
+        // Given: A string to write to.
+        let mut s = StringWriter::default();
+
+        // Given: A code writer to write with.
+        let mut cw = CodeWriter::default();
+
+        // Given: An empty block.
+        let block = Block::default();
+
+        // When: The block is serialized to source code.
+        let result = block.emit(&mut cw, &mut s);
+
+        // Then: There was no error.
+        assert!(result.is_ok());
+
+        // Then: The output matches expectations.
+        assert_eq!(s.into_content(), "\tpass\n");
+    }
+
+    /* ---------------------------- Tests: FnDef ---------------------------- */
+
+    #[test]
+    fn test_fn_def_no_params_no_return_type() {
+        // Given: A string to write to.
+        let mut s = StringWriter::default();
+
+        // Given: A code writer to write with.
+        let mut cw = CodeWriter::default();
+
+        // Given: A function with no parameters or return type.
+        let func = FnDef {
+            comment: None,
+            name: "_ready".to_string(),
+            params: vec![],
+            type_hint: None,
+            body: Block::default(),
+        };
+
+        // When: The function is serialized to source code.
+        let result = func.emit(&mut cw, &mut s);
+
+        // Then: There was no error.
+        assert!(result.is_ok());
+
+        // Then: The output matches expectations.
+        assert_eq!(s.into_content(), "func _ready():\n\tpass\n");
+    }
+
+    #[test]
+    fn test_fn_def_with_params() {
+        // Given: A string to write to.
+        let mut s = StringWriter::default();
+
+        // Given: A code writer to write with.
+        let mut cw = CodeWriter::default();
+
+        // Given: A function with parameters.
+        let func = FnDef {
+            comment: None,
+            name: "add".to_string(),
+            params: vec![
+                Assignment::builder()
+                    .name("a".to_string())
+                    .value(super::super::ValueKind::Raw("0".to_string()))
+                    .build()
+                    .unwrap(),
+                Assignment::builder()
+                    .name("b".to_string())
+                    .value(super::super::ValueKind::Raw("0".to_string()))
+                    .build()
+                    .unwrap(),
+            ],
+            type_hint: None,
+            body: Block::default(),
+        };
+
+        // When: The function is serialized to source code.
+        let result = func.emit(&mut cw, &mut s);
+
+        // Then: There was no error.
+        assert!(result.is_ok());
+
+        // Then: The output matches expectations.
+        assert_eq!(s.into_content(), "func add(a = 0b = 0):\n\tpass\n");
+    }
+
+    #[test]
+    fn test_fn_def_with_return_type() {
+        // Given: A string to write to.
+        let mut s = StringWriter::default();
+
+        // Given: A code writer to write with.
+        let mut cw = CodeWriter::default();
+
+        // Given: A function with explicit return type.
+        let func = FnDef {
+            comment: None,
+            name: "get_value".to_string(),
+            params: vec![],
+            type_hint: Some(TypeHint::Explicit("int".to_string())),
+            body: Block::default(),
+        };
+
+        // When: The function is serialized to source code.
+        let result = func.emit(&mut cw, &mut s);
+
+        // Then: There was no error.
+        assert!(result.is_ok());
+
+        // Then: The output matches expectations.
+        assert_eq!(s.into_content(), "func get_value() -> int:\n\tpass\n");
+    }
+}

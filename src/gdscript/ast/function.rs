@@ -72,14 +72,17 @@ impl Emit for FnDef {
         self.body.emit(cw, w)?;
 
         if let Some(return_expr) = &self.return_value {
+            cw.newline(w)?;
+
             cw.indent();
 
             cw.write(w, &format!("{}return ", cw.get_indent()))?;
             return_expr.emit(cw, w)?;
 
             cw.outdent();
-            cw.newline(w)?;
         }
+
+        cw.newline(w)?;
 
         Ok(())
     }
@@ -111,10 +114,16 @@ impl Emit for Block {
         cw.indent();
 
         if self.body.is_empty() {
-            cw.writeln(w, "pass")?;
+            cw.write(w, &format!("{}pass", cw.get_indent()))?;
         } else {
-            for item in &self.body {
+            for (i, item) in self.body.iter().enumerate() {
+                cw.write(w, &cw.get_indent())?;
+
                 item.emit(cw, w)?;
+
+                if i < self.body.len() - 1 {
+                    cw.newline(w)?;
+                }
             }
         }
 
@@ -156,7 +165,7 @@ mod tests {
         assert!(result.is_ok());
 
         // Then: The output matches expectations.
-        assert_eq!(s.into_content(), "\tpass\n");
+        assert_eq!(s.into_content(), "\tpass");
     }
 
     /* ---------------------------- Tests: FnDef ---------------------------- */

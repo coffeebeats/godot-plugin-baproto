@@ -97,8 +97,16 @@ impl Emit for Section {
         cw.blank_line(w)?;
 
         // Emit body items.
-        for item in &self.body {
+        for (i, item) in self.body.iter().enumerate() {
+            if matches!(item, Item::FnDef(_)) && i > 0 {
+                cw.newline(w)?;
+            }
+
             item.emit(cw, w)?;
+
+            if !matches!(item, Item::FnDef(_)) {
+                cw.newline(w)?;
+            }
         }
 
         // Trailing blank line after section.

@@ -10,6 +10,8 @@ use super::Emit;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Expr {
+    /// `BinaryOp` is a binary operator expression.
+    BinaryOp(BinaryOp),
     /// `FnCall` is a function call expression.
     FnCall(FnCall),
     /// `FieldAccess` is a property access expression.
@@ -20,8 +22,6 @@ pub enum Expr {
     IndexAccess(IndexAccess),
     /// `Literal` is a type-safe literal value.
     Literal(Literal),
-    /// `Raw` is an arbitrary expression.
-    Raw(String),
 }
 
 /* ------------------------------- Impl: Expr ------------------------------- */
@@ -60,7 +60,16 @@ impl Expr {
 
     /// `null` creates an expression for GDScript's `null`.
     pub fn null() -> Expr {
-        Expr::Raw(format!("null"))
+        Expr::Identifier("null".to_string())
+    }
+
+    /// `binary_op` creates a binary operation expression.
+    pub fn binary_op<T: Into<Expr>, U: Into<Expr>>(left: T, op: Operator, right: U) -> Expr {
+        Expr::BinaryOp(BinaryOp {
+            left: Box::new(left.into()),
+            op,
+            right: Box::new(right.into()),
+        })
     }
 }
 
@@ -68,7 +77,15 @@ impl Expr {
 
 impl<T: AsRef<str>> From<T> for Expr {
     fn from(value: T) -> Self {
-        Self::Raw(value.as_ref().to_owned())
+        Self::Identifier(value.as_ref().to_owned())
+    }
+}
+
+/* ------------------------- Impl: From<BinaryOp> --------------------------- */
+
+impl From<BinaryOp> for Expr {
+    fn from(value: BinaryOp) -> Self {
+        Self::BinaryOp(value)
     }
 }
 
@@ -109,13 +126,66 @@ impl From<Literal> for Expr {
 impl Emit for Expr {
     fn emit<W: Writer>(&self, cw: &mut CodeWriter, w: &mut W) -> anyhow::Result<()> {
         match self {
-            Self::Raw(s) => cw.write(w, s),
+            Self::BinaryOp(b) => b.emit(cw, w),
             Self::FnCall(f) => f.emit(cw, w),
             Self::FieldAccess(f) => f.emit(cw, w),
             Self::Identifier(name) => cw.write(w, name),
             Self::IndexAccess(i) => i.emit(cw, w),
             Self::Literal(l) => l.emit(cw, w),
         }
+    }
+}
+
+/* -------------------------------------------------------------------------- */
+/*                             Struct: BinaryOp                               */
+/* -------------------------------------------------------------------------- */
+
+/// `BinaryOp` is a binary operator expression.
+#[derive(Clone, Debug, PartialEq)]
+pub struct BinaryOp {
+    /// `left` is the left-hand side expression.
+    pub left: Box<Expr>,
+    /// `op` is the binary operator.
+    pub op: Operator,
+    /// `right` is the right-hand side expression.
+    pub right: Box<Expr>,
+}
+
+/* ------------------------------- Impl: Emit ------------------------------- */
+
+impl Emit for BinaryOp {
+    fn emit<W: Writer>(&self, cw: &mut CodeWriter, w: &mut W) -> anyhow::Result<()> {
+        self.left.emit(cw, w)?;
+        cw.write(w, " ")?;
+        self.op.emit(cw, w)?;
+        cw.write(w, " ")?;
+        self.right.emit(cw, w)?;
+        Ok(())
+    }
+}
+
+/* -------------------------------------------------------------------------- */
+/*                              Enum: Operator                                */
+/* -------------------------------------------------------------------------- */
+
+/// `Operator` represents a binary operator.
+#[derive(Clone, Debug, PartialEq)]
+pub enum Operator {
+    /// `Eq` is the equality operator.
+    Eq,
+    /// `NotEq` is the inequality operator.
+    NotEq,
+}
+
+/* ------------------------------- Impl: Emit ------------------------------- */
+
+impl Emit for Operator {
+    fn emit<W: Writer>(&self, cw: &mut CodeWriter, w: &mut W) -> anyhow::Result<()> {
+        let s = match self {
+            Self::Eq => "==",
+            Self::NotEq => "!=",
+        };
+        cw.write(w, s)
     }
 }
 
@@ -417,29 +487,6 @@ mod tests {
 
     use super::*;
 
-    /* ----------------------------- Tests: Expr ---------------------------- */
-
-    #[test]
-    fn test_expr_raw() {
-        // Given: A string to write to.
-        let mut s = StringWriter::default();
-
-        // Given: A code writer to write with.
-        let mut cw = GDScript::writer();
-
-        // Given: A raw expression.
-        let expr = Expr::Raw("x + y * 2".to_string());
-
-        // When: The expression is serialized to source code.
-        let result = expr.emit(&mut cw, &mut s);
-
-        // Then: There was no error.
-        assert!(result.is_ok());
-
-        // Then: The output matches expectations.
-        assert_eq!(s.into_content(), "x + y * 2");
-    }
-
     /* ---------------------------- Tests: FnCall --------------------------- */
 
     #[test]
@@ -505,9 +552,9 @@ mod tests {
             receiver: None,
             name: "add".to_string(),
             args: vec![
-                Expr::Raw("1".to_string()),
-                Expr::Raw("2".to_string()),
-                Expr::Raw("3".to_string()),
+                Expr::Literal(1.into()),
+                Expr::Literal(2.into()),
+                Expr::Literal(3.into()),
             ],
         };
 
@@ -749,7 +796,7 @@ mod tests {
         let mut cw = GDScript::writer();
 
         // Given: A float literal.
-        let expr = Expr::Literal(Literal::Float(3.14));
+        let expr = Expr::Literal(Literal::Float(3.5));
 
         // When: The expression is serialized to source code.
         let result = expr.emit(&mut cw, &mut s);
@@ -758,7 +805,7 @@ mod tests {
         assert!(result.is_ok());
 
         // Then: The output matches expectations.
-        assert_eq!(s.into_content(), "3.14");
+        assert_eq!(s.into_content(), "3.5");
     }
 
     #[test]
@@ -877,5 +924,78 @@ mod tests {
 
         // Then: The output matches expectations.
         assert_eq!(s.into_content(), "{\"name\": \"John\", \"age\": 30}");
+    }
+
+    /* -------------------------- Tests: BinaryOp --------------------------- */
+
+    #[test]
+    fn test_binary_op_equality() {
+        // Given: A string to write to.
+        let mut s = StringWriter::default();
+
+        // Given: A code writer to write with.
+        let mut cw = GDScript::writer();
+
+        // Given: A binary operation with equality operator.
+        let expr = Expr::binary_op(Expr::ident("x"), Operator::Eq, Expr::Literal(5.into()));
+
+        // When: The expression is serialized to source code.
+        let result = expr.emit(&mut cw, &mut s);
+
+        // Then: There was no error.
+        assert!(result.is_ok());
+
+        // Then: The output matches expectations.
+        assert_eq!(s.into_content(), "x == 5");
+    }
+
+    #[test]
+    fn test_binary_op_inequality() {
+        // Given: A string to write to.
+        let mut s = StringWriter::default();
+
+        // Given: A code writer to write with.
+        let mut cw = GDScript::writer();
+
+        // Given: A binary operation with inequality operator.
+        let expr = Expr::binary_op(
+            Expr::field(Expr::ident("_reader"), "get_error"),
+            Operator::NotEq,
+            Expr::ident("OK"),
+        );
+
+        // When: The expression is serialized to source code.
+        let result = expr.emit(&mut cw, &mut s);
+
+        // Then: There was no error.
+        assert!(result.is_ok());
+
+        // Then: The output matches expectations.
+        assert_eq!(s.into_content(), "_reader.get_error != OK");
+    }
+
+    #[test]
+    fn test_binary_op_with_method_call() {
+        // Given: A string to write to.
+        let mut s = StringWriter::default();
+
+        // Given: A code writer to write with.
+        let mut cw = GDScript::writer();
+
+        // Given: A binary operation with method call.
+        let expr = Expr::binary_op(
+            FnCall::method(Expr::ident("_reader"), "get_error"),
+            Operator::NotEq,
+            Expr::ident("OK"),
+        );
+
+        // When: The expression is serialized to source code.
+        let result = expr.emit(&mut cw, &mut s);
+
+        // Then: There was no error.
+        assert!(result.is_ok());
+
+        // Then: The output matches expectations.
+        assert_eq!(s.into_content(), "_reader.get_error() != OK");
     }
 }

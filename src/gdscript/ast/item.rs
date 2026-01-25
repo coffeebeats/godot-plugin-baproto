@@ -27,6 +27,9 @@ pub enum Item {
 
     /// If-else conditional.
     If(If),
+
+    /// Early return statement.
+    Return(Expr),
 }
 
 /* ------------------------- Impl: From<Assignment> ------------------------- */
@@ -34,6 +37,14 @@ pub enum Item {
 impl From<Assignment> for Item {
     fn from(value: Assignment) -> Self {
         Self::Assignment(value)
+    }
+}
+
+/* ---------------------------- Impl: From<Expr> ---------------------------- */
+
+impl From<Expr> for Item {
+    fn from(value: Expr) -> Self {
+        Self::Expr(value)
     }
 }
 
@@ -63,6 +74,10 @@ impl super::Emit for Item {
             Item::ForIn(f) => f.emit(cw, w),
             Item::If(i) => i.emit(cw, w),
             Item::FnDef(f) => f.emit(cw, w),
+            Item::Return(expr) => {
+                cw.write(w, "return ")?;
+                expr.emit(cw, w)
+            }
         }
     }
 }

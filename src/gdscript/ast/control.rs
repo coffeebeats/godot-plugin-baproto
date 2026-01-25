@@ -58,7 +58,9 @@ impl Emit for If {
         self.then_body.emit(cw, w)?;
 
         if let Some(else_body) = &self.else_body {
-            cw.writeln(w, "else:")?;
+            cw.newline(w)?;
+            cw.write(w, "else:")?;
+            cw.newline(w)?;
             else_body.emit(cw, w)?;
         }
 
@@ -101,7 +103,7 @@ mod tests {
         assert!(result.is_ok());
 
         // Then: The output matches expectations.
-        assert_eq!(s.into_content(), "if x > 0:\n\tpass\n");
+        assert_eq!(s.into_content(), "if x > 0:\n\tpass");
     }
 
     #[test]
@@ -126,7 +128,7 @@ mod tests {
         assert!(result.is_ok());
 
         // Then: The output matches expectations.
-        assert_eq!(s.into_content(), "if ready:\n\tpass\nelse:\n\tpass\n");
+        assert_eq!(s.into_content(), "if ready:\n\tpass\nelse:\n\tpass");
     }
 
     /* ---------------------------- Tests: ForIn ---------------------------- */
@@ -153,6 +155,6 @@ mod tests {
         assert!(result.is_ok());
 
         // Then: The output matches expectations.
-        assert_eq!(s.into_content(), "for item in items:\n\tpass\n");
+        assert_eq!(s.into_content(), "for item in items:\n\tpass");
     }
 }

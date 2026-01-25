@@ -5,38 +5,6 @@ use crate::gdscript::ast::{Assignment, Expr, FnCall, ForInBuilder, IfBuilder, It
 use super::wire::get_write_method;
 
 /* -------------------------------------------------------------------------- */
-/*                           Fn: gen_null_check                               */
-/* -------------------------------------------------------------------------- */
-
-/// `gen_null_check` generates an early return if field is null.
-///
-/// # Generated GDScript
-/// ```gdscript
-/// if field == null:
-///     _writer.set_error(ERR_INVALID_DATA)
-///     return
-/// ```
-fn gen_null_check(field_name: &str) -> Item {
-    let condition = Expr::binary_op(Expr::ident(field_name), Operator::Eq, Expr::null());
-
-    let set_error = Item::Expr(FnCall::method_args(
-        Expr::ident("_writer"),
-        "set_error",
-        vec![Expr::ident("ERR_INVALID_DATA")],
-    ));
-
-    let return_stmt = Item::Return(Expr::null());
-
-    Item::If(
-        IfBuilder::default()
-            .condition(condition)
-            .then_body(vec![set_error, return_stmt].into())
-            .build()
-            .unwrap(),
-    )
-}
-
-/* -------------------------------------------------------------------------- */
 /*                            Fn: gen_encode_stmts                            */
 /* -------------------------------------------------------------------------- */
 
@@ -66,9 +34,7 @@ pub fn gen_encode_stmts(field_name: &str, encoding: &Encoding) -> anyhow::Result
     }
 }
 
-/* -------------------------------------------------------------------------- */
-/*                         Fn: gen_encode_primitive                           */
-/* -------------------------------------------------------------------------- */
+/* ------------------------ Fn: gen_encode_primitive ------------------------ */
 
 /// `gen_encode_primitive` generates encoding for a primitive field.
 ///
@@ -87,9 +53,7 @@ fn gen_encode_primitive(field_name: &str, encoding: &Encoding) -> anyhow::Result
     Ok(vec![Item::Expr(call)])
 }
 
-/* -------------------------------------------------------------------------- */
-/*                            Fn: gen_encode_bytes                            */
-/* -------------------------------------------------------------------------- */
+/* -------------------------- Fn: gen_encode_bytes -------------------------- */
 
 /// `gen_encode_bytes` generates encoding for a bytes field.
 ///
@@ -117,9 +81,7 @@ fn gen_encode_bytes(field_name: &str) -> anyhow::Result<Vec<Item>> {
     Ok(vec![Item::Expr(write_length), Item::Expr(write_bytes)])
 }
 
-/* -------------------------------------------------------------------------- */
-/*                            Fn: gen_encode_array                            */
-/* -------------------------------------------------------------------------- */
+/* -------------------------- Fn: gen_encode_array -------------------------- */
 
 /// `gen_encode_array` generates encoding for an array field.
 fn gen_encode_array(field_name: &str, element: &Encoding) -> anyhow::Result<Vec<Item>> {
@@ -132,9 +94,7 @@ fn gen_encode_array(field_name: &str, element: &Encoding) -> anyhow::Result<Vec<
     }
 }
 
-/* -------------------------------------------------------------------------- */
-/*                       Fn: gen_encode_array_primitive                       */
-/* -------------------------------------------------------------------------- */
+/* --------------------- Fn: gen_encode_array_primitive --------------------- */
 
 /// `gen_encode_array_primitive` generates encoding for an array of primitives.
 ///
@@ -169,9 +129,7 @@ fn gen_encode_array_primitive(field_name: &str, element: &Encoding) -> anyhow::R
     Ok(vec![Item::Expr(write_length), for_loop])
 }
 
-/* -------------------------------------------------------------------------- */
-/*                        Fn: gen_encode_array_message                        */
-/* -------------------------------------------------------------------------- */
+/* ---------------------- Fn: gen_encode_array_message ---------------------- */
 
 /// `gen_encode_array_message` generates encoding for an array of messages.
 ///
@@ -216,9 +174,7 @@ fn gen_encode_array_message(field_name: &str, _element: &Encoding) -> anyhow::Re
     Ok(vec![Item::Expr(write_length), for_loop])
 }
 
-/* -------------------------------------------------------------------------- */
-/*                          Fn: gen_encode_message                            */
-/* -------------------------------------------------------------------------- */
+/* ------------------------- Fn: gen_encode_message ------------------------- */
 
 /// `gen_encode_message` generates encoding for a message field.
 ///
@@ -243,9 +199,7 @@ fn gen_encode_message(field_name: &str) -> anyhow::Result<Vec<Item>> {
     Ok(vec![null_check, encode_call])
 }
 
-/* -------------------------------------------------------------------------- */
-/*                            Fn: gen_encode_map                              */
-/* -------------------------------------------------------------------------- */
+/* --------------------------- Fn: gen_encode_map --------------------------- */
 
 /// `gen_encode_map` generates encoding for a map field.
 fn gen_encode_map(field_name: &str, key: &Encoding, value: &Encoding) -> anyhow::Result<Vec<Item>> {
@@ -258,9 +212,7 @@ fn gen_encode_map(field_name: &str, key: &Encoding, value: &Encoding) -> anyhow:
     }
 }
 
-/* -------------------------------------------------------------------------- */
-/*                        Fn: gen_encode_map_primitive                        */
-/* -------------------------------------------------------------------------- */
+/* ---------------------- Fn: gen_encode_map_primitive ---------------------- */
 
 /// `gen_encode_map_primitive` generates encoding for a map with primitive values.
 ///
@@ -317,9 +269,7 @@ fn gen_encode_map_primitive(
     Ok(vec![Item::Expr(write_length), for_loop])
 }
 
-/* -------------------------------------------------------------------------- */
-/*                         Fn: gen_encode_map_message                         */
-/* -------------------------------------------------------------------------- */
+/* ----------------------- Fn: gen_encode_map_message ----------------------- */
 
 /// `gen_encode_map_message` generates encoding for a map with message values.
 ///
@@ -381,6 +331,38 @@ fn gen_encode_map_message(
     );
 
     Ok(vec![Item::Expr(write_length), for_loop])
+}
+
+/* -------------------------------------------------------------------------- */
+/*                           Fn: gen_null_check                               */
+/* -------------------------------------------------------------------------- */
+
+/// `gen_null_check` generates an early return if field is null.
+///
+/// # Generated GDScript
+/// ```gdscript
+/// if field == null:
+///     _writer.set_error(ERR_INVALID_DATA)
+///     return
+/// ```
+fn gen_null_check(field_name: &str) -> Item {
+    let condition = Expr::binary_op(Expr::ident(field_name), Operator::Eq, Expr::null());
+
+    let set_error = Item::Expr(FnCall::method_args(
+        Expr::ident("_writer"),
+        "set_error",
+        vec![Expr::ident("ERR_INVALID_DATA")],
+    ));
+
+    let return_stmt = Item::Return(Expr::null());
+
+    Item::If(
+        IfBuilder::default()
+            .condition(condition)
+            .then_body(vec![set_error, return_stmt].into())
+            .build()
+            .unwrap(),
+    )
 }
 
 /* -------------------------------------------------------------------------- */

@@ -71,6 +71,7 @@ impl Assignment {
 
     /// `param` creates a function parameter. To create one without a default
     /// value, see [`Assignment::param`].
+    #[allow(dead_code)]
     pub fn param_with_default<T, U, V>(name: T, hint: U, value: V) -> Self
     where
         T: AsRef<str>,

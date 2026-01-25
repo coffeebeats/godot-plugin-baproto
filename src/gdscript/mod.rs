@@ -86,7 +86,9 @@ impl Generator for GDScript {
                     TypeKind::Message(msg) => {
                         message::generate_message(&mut cw, msg, entry, &pkg.name)
                     }
-                    TypeKind::Enum(enm) => enumeration::generate_enum(&mut cw, enm, entry),
+                    TypeKind::Enum(enm) => {
+                        enumeration::generate_enum(&mut cw, enm, entry, &pkg.name)
+                    }
                 }
                 .map_err(|e| GeneratorError::Generation(e.to_string()))?;
 

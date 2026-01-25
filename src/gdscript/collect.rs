@@ -18,13 +18,13 @@ pub enum TypeKind {
 /// `TypeEntry` represents a single type (message or enum) to be generated as
 /// a separate GDScript file.
 #[derive(Clone, Debug)]
-#[allow(dead_code)]
 pub struct TypeEntry {
     /// The kind of type (message or enum).
     pub kind: TypeKind,
     /// The file stem (e.g., "Player_Stats" for nested type Stats in Player).
     pub file_stem: String,
     /// The simple name (e.g., "Stats" for const reference from parent).
+    #[allow(dead_code)]
     pub simple_name: String,
     /// File stems of nested types (for generating const preloads).
     pub nested: Vec<String>,

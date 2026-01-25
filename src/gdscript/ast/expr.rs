@@ -33,6 +33,7 @@ impl Expr {
     }
 
     /// `field` creates a field access expression.
+    #[allow(dead_code)]
     pub fn field<T: Into<Expr>, U: AsRef<str>>(receiver: T, field: U) -> Expr {
         Expr::FieldAccess(FieldAccess {
             receiver: Box::new(receiver.into()),

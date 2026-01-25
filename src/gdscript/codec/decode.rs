@@ -5,40 +5,10 @@ use crate::gdscript::ast::{Assignment, Expr, FnCall, ForInBuilder, IfBuilder, It
 use super::wire::get_read_method;
 
 /* -------------------------------------------------------------------------- */
-/*                         Fn: gen_reader_error_check                         */
-/* -------------------------------------------------------------------------- */
-
-/// `gen_reader_error_check` generates an early return if reader has an error.
-///
-/// # Generated GDScript
-/// ```gdscript
-/// if _reader.get_error() != OK:
-///     return _reader.get_error()
-/// ```
-fn gen_reader_error_check() -> Item {
-    let condition = Expr::binary_op(
-        FnCall::method(Expr::ident("_reader"), "get_error"),
-        Operator::NotEq,
-        Expr::ident("OK"),
-    );
-
-    let return_stmt = Item::Return(FnCall::method(Expr::ident("_reader"), "get_error"));
-
-    Item::If(
-        IfBuilder::default()
-            .condition(condition)
-            .then_body(vec![return_stmt].into())
-            .build()
-            .unwrap(),
-    )
-}
-
-/* -------------------------------------------------------------------------- */
 /*                            Fn: gen_decode_stmts                            */
 /* -------------------------------------------------------------------------- */
 
 /// `gen_decode_stmts` generates decode statements for a field.
-#[allow(dead_code)]
 pub fn gen_decode_stmts(field_name: &str, encoding: &Encoding) -> anyhow::Result<Vec<Item>> {
     match &encoding.native {
         // Primitives: Bool, Int, Float, String
@@ -64,9 +34,7 @@ pub fn gen_decode_stmts(field_name: &str, encoding: &Encoding) -> anyhow::Result
     }
 }
 
-/* -------------------------------------------------------------------------- */
-/*                         Fn: gen_decode_primitive                           */
-/* -------------------------------------------------------------------------- */
+/* ------------------------ Fn: gen_decode_primitive ------------------------ */
 
 /// `gen_decode_primitive` generates decoding for a primitive field.
 ///
@@ -86,9 +54,7 @@ fn gen_decode_primitive(field_name: &str, encoding: &Encoding) -> anyhow::Result
     Ok(vec![Item::Assignment(assignment), gen_reader_error_check()])
 }
 
-/* -------------------------------------------------------------------------- */
-/*                            Fn: gen_decode_bytes                            */
-/* -------------------------------------------------------------------------- */
+/* -------------------------- Fn: gen_decode_bytes -------------------------- */
 
 /// `gen_decode_bytes` generates decoding for a bytes field.
 ///
@@ -110,9 +76,7 @@ fn gen_decode_bytes(field_name: &str) -> anyhow::Result<Vec<Item>> {
     Ok(vec![Item::Assignment(assignment), gen_reader_error_check()])
 }
 
-/* -------------------------------------------------------------------------- */
-/*                            Fn: gen_decode_array                            */
-/* -------------------------------------------------------------------------- */
+/* -------------------------- Fn: gen_decode_array -------------------------- */
 
 /// `gen_decode_array` generates decoding for an array field.
 fn gen_decode_array(field_name: &str, element: &Encoding) -> anyhow::Result<Vec<Item>> {
@@ -125,9 +89,7 @@ fn gen_decode_array(field_name: &str, element: &Encoding) -> anyhow::Result<Vec<
     }
 }
 
-/* -------------------------------------------------------------------------- */
-/*                       Fn: gen_decode_array_primitive                       */
-/* -------------------------------------------------------------------------- */
+/* --------------------- Fn: gen_decode_array_primitive --------------------- */
 
 /// `gen_decode_array_primitive` generates decoding for an array of primitives.
 ///
@@ -174,9 +136,7 @@ fn gen_decode_array_primitive(field_name: &str, element: &Encoding) -> anyhow::R
     Ok(vec![Item::Assignment(init), for_loop])
 }
 
-/* -------------------------------------------------------------------------- */
-/*                        Fn: gen_decode_array_message                        */
-/* -------------------------------------------------------------------------- */
+/* ---------------------- Fn: gen_decode_array_message ---------------------- */
 
 /// `gen_decode_array_message` generates decoding for an array of messages.
 ///
@@ -243,9 +203,7 @@ fn gen_decode_array_message(field_name: &str, element: &Encoding) -> anyhow::Res
     Ok(vec![Item::Assignment(init), for_loop])
 }
 
-/* -------------------------------------------------------------------------- */
-/*                          Fn: gen_decode_message                            */
-/* -------------------------------------------------------------------------- */
+/* ------------------------- Fn: gen_decode_message ------------------------- */
 
 /// `gen_decode_message` generates decoding for a message field.
 ///
@@ -280,9 +238,7 @@ fn gen_decode_message(
     Ok(vec![Item::Assignment(assignment), decode_call, error_check])
 }
 
-/* -------------------------------------------------------------------------- */
-/*                            Fn: gen_decode_map                              */
-/* -------------------------------------------------------------------------- */
+/* --------------------------- Fn: gen_decode_map --------------------------- */
 
 /// `gen_decode_map` generates decoding for a map field.
 fn gen_decode_map(field_name: &str, key: &Encoding, value: &Encoding) -> anyhow::Result<Vec<Item>> {
@@ -295,9 +251,7 @@ fn gen_decode_map(field_name: &str, key: &Encoding, value: &Encoding) -> anyhow:
     }
 }
 
-/* -------------------------------------------------------------------------- */
-/*                        Fn: gen_decode_map_primitive                        */
-/* -------------------------------------------------------------------------- */
+/* ---------------------- Fn: gen_decode_map_primitive ---------------------- */
 
 /// `gen_decode_map_primitive` generates decoding for a map with primitive values.
 ///
@@ -370,9 +324,7 @@ fn gen_decode_map_primitive(
     Ok(vec![Item::Assignment(init), for_loop])
 }
 
-/* -------------------------------------------------------------------------- */
-/*                         Fn: gen_decode_map_message                         */
-/* -------------------------------------------------------------------------- */
+/* ----------------------- Fn: gen_decode_map_message ----------------------- */
 
 /// `gen_decode_map_message` generates decoding for a map with message values.
 ///
@@ -458,6 +410,35 @@ fn gen_decode_map_message(
     );
 
     Ok(vec![Item::Assignment(init), for_loop])
+}
+
+/* -------------------------------------------------------------------------- */
+/*                         Fn: gen_reader_error_check                         */
+/* -------------------------------------------------------------------------- */
+
+/// `gen_reader_error_check` generates an early return if reader has an error.
+///
+/// # Generated GDScript
+/// ```gdscript
+/// if _reader.get_error() != OK:
+///     return _reader.get_error()
+/// ```
+fn gen_reader_error_check() -> Item {
+    let condition = Expr::binary_op(
+        FnCall::method(Expr::ident("_reader"), "get_error"),
+        Operator::NotEq,
+        Expr::ident("OK"),
+    );
+
+    let return_stmt = Item::Return(FnCall::method(Expr::ident("_reader"), "get_error"));
+
+    Item::If(
+        IfBuilder::default()
+            .condition(condition)
+            .then_body(vec![return_stmt].into())
+            .build()
+            .unwrap(),
+    )
 }
 
 /* -------------------------------------------------------------------------- */
@@ -913,7 +894,10 @@ if _reader.get_error() != OK:
         let mut cw = GDScript::writer();
         stmts[0].emit(&mut cw, &mut s).unwrap();
         let actual = s.into_content();
-        assert_eq!(actual, "data = _reader.read_bytes(_reader.read_varint_unsigned())");
+        assert_eq!(
+            actual,
+            "data = _reader.read_bytes(_reader.read_varint_unsigned())"
+        );
 
         // Then: Second statement is error check.
         let mut s2 = StringWriter::default();

@@ -33,7 +33,7 @@ pub fn default_value(native: &NativeType) -> Expr {
     match native {
         NativeType::Array { .. } => Expr::empty_array(),
         NativeType::Bool => Literal::Bool(false).into(),
-        NativeType::Bytes => Expr::Raw(format!("PackedByteArray()")),
+        NativeType::Bytes => FnCall::function("PackedByteArray"),
         NativeType::Enum { .. } => todo!(),
         NativeType::Float { .. } => Literal::Float(0.0).into(),
         NativeType::Int { .. } => Literal::Int(0).into(),
@@ -76,6 +76,38 @@ pub fn collect_field_dependencies(
             &mut seen,
             &mut deps,
         );
+    }
+
+    deps
+}
+
+/* -------------------------------------------------------------------------- */
+/*                      Fn: collect_variant_dependencies                      */
+/* -------------------------------------------------------------------------- */
+
+/// `collect_variant_dependencies` collects all external type dependencies from
+/// the variants of an enum (message and enum types that need preloads).
+///
+/// Returns a vector of `(const_name, file_stem, preload_path)` tuples.
+pub fn collect_variant_dependencies(
+    variants: &[baproto::Variant],
+    current_pkg: &[String],
+    current_file_stem: &str,
+) -> Vec<(String, String, String)> {
+    let mut seen = HashSet::new();
+    let mut deps = Vec::new();
+
+    for variant in variants {
+        match variant {
+            baproto::Variant::Unit { .. } => {}
+            baproto::Variant::Field { field, .. } => collect_native_dependencies(
+                &field.encoding.native,
+                current_pkg,
+                current_file_stem,
+                &mut seen,
+                &mut deps,
+            ),
+        };
     }
 
     deps
@@ -385,7 +417,7 @@ mod tests {
         let result = default_value(&native);
 
         // Then: It should be empty string literal.
-        assert_eq!(result, Expr::Literal(Literal::String(format!(""))));
+        assert_eq!(result, Expr::Literal(Literal::String(String::new())));
     }
 
     /* --------------------- Tests: resolve_preload_path -------------------- */

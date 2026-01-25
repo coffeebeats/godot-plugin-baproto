@@ -40,7 +40,6 @@ pub use script::*;
 /* -------------------------------------------------------------------------- */
 
 /// `Emit` writes a GDScript construct to a `CodeWriter`.
-#[allow(dead_code)]
 pub trait Emit {
     fn emit<W: Writer>(&self, cw: &mut CodeWriter, w: &mut W) -> anyhow::Result<()>;
 }

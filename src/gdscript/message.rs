@@ -24,7 +24,7 @@ pub fn generate_message(
     let mut sections = Vec::new();
 
     sections.push(gen_dependencies(&msg.fields, pkg, &entry.file_stem));
-    sections.push(gen_types(&entry));
+    sections.push(gen_types(entry));
 
     if !msg.fields.is_empty() {
         sections.push(gen_fields(&msg.fields));
@@ -83,7 +83,7 @@ fn gen_fields(fields: &[Field]) -> Section {
             AssignmentBuilder::default()
                 .comment(field.doc.as_ref().map(Comment::from))
                 .declaration(DeclarationKind::Var)
-                .name(escape_keyword(&field.name))
+                .variable(escape_keyword(&field.name))
                 .type_hint(TypeHint::Explicit(type_str))
                 .value(ValueKind::Expr(default_value))
                 .build()
@@ -155,11 +155,11 @@ fn gen_private_methods(fields: &[Field]) -> anyhow::Result<Section> {
         .body(
             fields
                 .iter()
-                .try_fold(Vec::new(), |mut acc, f| -> anyhow::Result<Vec<Item>> {
+                .try_fold(Vec::new(), |mut out, f| -> anyhow::Result<Vec<Item>> {
                     let field_name = escape_keyword(&f.name);
                     let stmts = codec::gen_encode_stmts(&field_name, &f.encoding)?;
-                    acc.extend(stmts);
-                    Ok(acc)
+                    out.extend(stmts);
+                    Ok(out)
                 })?,
         )
         .build()
@@ -173,11 +173,11 @@ fn gen_private_methods(fields: &[Field]) -> anyhow::Result<Section> {
         .body(
             fields
                 .iter()
-                .try_fold(Vec::new(), |mut acc, f| -> anyhow::Result<Vec<Item>> {
+                .try_fold(Vec::new(), |mut out, f| -> anyhow::Result<Vec<Item>> {
                     let field_name = escape_keyword(&f.name);
                     let stmts = codec::gen_decode_stmts(&field_name, &f.encoding)?;
-                    acc.extend(stmts);
-                    Ok(acc)
+                    out.extend(stmts);
+                    Ok(out)
                 })?,
         )
         .return_value(FnCall::method("_reader", "get_error"))
@@ -210,16 +210,4 @@ fn gen_types(entry: &TypeEntry) -> Section {
         .body(items)
         .build()
         .unwrap()
-}
-
-/* -------------------------------------------------------------------------- */
-/*                                 Mod: Tests                                 */
-/* -------------------------------------------------------------------------- */
-
-#[cfg(test)]
-mod tests {
-    // Note: Full integration tests that require constructing Message/Enum with
-    // Descriptors are in `mod.rs` where we use the `Generator::generate`
-    // method. Unit tests for encode/decode logic are in `codec.rs` and AST
-    // emission tests are in `ast/mod.rs`.
 }

@@ -15,6 +15,11 @@ pub use comment::*;
 mod control;
 pub use control::*;
 
+/* ---------------------------- Mod: Enumeration ---------------------------- */
+
+mod enumeration;
+pub use enumeration::*;
+
 /* -------------------------------- Mod: Expr ------------------------------- */
 
 mod expr;

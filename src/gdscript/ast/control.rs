@@ -69,6 +69,50 @@ impl Emit for If {
 }
 
 /* -------------------------------------------------------------------------- */
+/*                               Struct: Match                                */
+/* -------------------------------------------------------------------------- */
+
+/// `Match` represents a match statement for pattern matching.
+#[derive(Builder, Clone, Debug)]
+pub struct Match {
+    #[builder(setter(into))]
+    pub scrutinee: Expr,
+    #[builder(default)]
+    pub arms: Vec<MatchArm>,
+}
+
+/// `MatchArm` represents a single arm in a match statement.
+#[derive(Clone, Debug)]
+pub struct MatchArm {
+    pub pattern: Expr,
+    pub body: Block,
+}
+
+/* ------------------------------- Impl: Emit ------------------------------- */
+
+impl Emit for Match {
+    fn emit<W: Writer>(&self, cw: &mut CodeWriter, w: &mut W) -> anyhow::Result<()> {
+        cw.write(w, "match ")?;
+        self.scrutinee.emit(cw, w)?;
+        cw.write(w, ":")?;
+        cw.newline(w)?;
+
+        cw.indent();
+        for arm in &self.arms {
+            cw.write(w, &cw.get_indent())?;
+            arm.pattern.emit(cw, w)?;
+            cw.write(w, ":")?;
+            cw.newline(w)?;
+            arm.body.emit(cw, w)?;
+            cw.newline(w)?;
+        }
+        cw.outdent();
+
+        Ok(())
+    }
+}
+
+/* -------------------------------------------------------------------------- */
 /*                                 Mod: Tests                                 */
 /* -------------------------------------------------------------------------- */
 
@@ -129,6 +173,45 @@ mod tests {
 
         // Then: The output matches expectations.
         assert_eq!(s.into_content(), "if ready:\n\tpass\nelse:\n\tpass");
+    }
+
+    /* --------------------------- Tests: Match ----------------------------- */
+
+    #[test]
+    fn test_match_statement() {
+        // Given: A string to write to.
+        let mut s = StringWriter::default();
+
+        // Given: A code writer to write with.
+        let mut cw = GDScript::writer();
+
+        // Given: A match statement with multiple arms.
+        let match_stmt = MatchBuilder::default()
+            .scrutinee(Expr::from("value"))
+            .arms(vec![
+                MatchArm {
+                    pattern: Expr::from("0"),
+                    body: Block::default(),
+                },
+                MatchArm {
+                    pattern: Expr::from("1"),
+                    body: Block::default(),
+                },
+            ])
+            .build()
+            .unwrap();
+
+        // When: The match statement is serialized to source code.
+        let result = match_stmt.emit(&mut cw, &mut s);
+
+        // Then: There was no error.
+        assert!(result.is_ok());
+
+        // Then: The output matches expectations.
+        assert_eq!(
+            s.into_content(),
+            "match value:\n\t0:\n\t\tpass\n\t1:\n\t\tpass\n"
+        );
     }
 
     /* ---------------------------- Tests: ForIn ---------------------------- */

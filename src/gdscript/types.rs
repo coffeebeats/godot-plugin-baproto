@@ -4,6 +4,36 @@ use std::collections::HashSet;
 use super::ast::*;
 
 /* -------------------------------------------------------------------------- */
+/*                             Struct: Dependency                             */
+/* -------------------------------------------------------------------------- */
+
+/// `Dependency` represents a type dependency requiring a preload statement.
+pub struct Dependency {
+    const_name: String,
+    preload_path: String,
+}
+
+impl Dependency {
+    /// `new` creates a new dependency.
+    fn new(const_name: String, preload_path: String) -> Self {
+        Self {
+            const_name,
+            preload_path,
+        }
+    }
+
+    /// `const_name` returns the constant name for the preload statement.
+    pub fn const_name(&self) -> &str {
+        &self.const_name
+    }
+
+    /// `preload_path` returns the relative path for the preload statement.
+    pub fn preload_path(&self) -> &str {
+        &self.preload_path
+    }
+}
+
+/* -------------------------------------------------------------------------- */
 /*                                Fn: type_name                               */
 /* -------------------------------------------------------------------------- */
 
@@ -19,8 +49,9 @@ pub fn type_name(native: &NativeType) -> String {
             format!("Array[{}]", type_name(&element.native))
         }
         NativeType::Map { .. } => "Dictionary".to_string(),
-        NativeType::Message { descriptor } => descriptor.path.join("_"),
-        NativeType::Enum { .. } => todo!(),
+        NativeType::Message { descriptor } | NativeType::Enum { descriptor } => {
+            descriptor.path.join("_")
+        }
     }
 }
 
@@ -34,7 +65,7 @@ pub fn default_value(native: &NativeType) -> Expr {
         NativeType::Array { .. } => Expr::empty_array(),
         NativeType::Bool => Literal::Bool(false).into(),
         NativeType::Bytes => FnCall::function("PackedByteArray"),
-        NativeType::Enum { .. } => todo!(),
+        NativeType::Enum { .. } => Expr::null(),
         NativeType::Float { .. } => Literal::Float(0.0).into(),
         NativeType::Int { .. } => Literal::Int(0).into(),
         NativeType::Map { .. } => Expr::empty_dict(),
@@ -58,13 +89,11 @@ pub fn pkg_to_path(pkg: &[String]) -> String {
 
 /// `collect_field_dependencies` collects all external type dependencies from
 /// the fields of a message (message and enum types that need preloads).
-///
-/// Returns a vector of `(const_name, file_stem, preload_path)` tuples.
 pub fn collect_field_dependencies(
     fields: &[baproto::Field],
     current_pkg: &[String],
     current_file_stem: &str,
-) -> Vec<(String, String, String)> {
+) -> Vec<Dependency> {
     let mut seen = HashSet::new();
     let mut deps = Vec::new();
 
@@ -87,13 +116,11 @@ pub fn collect_field_dependencies(
 
 /// `collect_variant_dependencies` collects all external type dependencies from
 /// the variants of an enum (message and enum types that need preloads).
-///
-/// Returns a vector of `(const_name, file_stem, preload_path)` tuples.
 pub fn collect_variant_dependencies(
     variants: &[baproto::Variant],
     current_pkg: &[String],
     current_file_stem: &str,
-) -> Vec<(String, String, String)> {
+) -> Vec<Dependency> {
     let mut seen = HashSet::new();
     let mut deps = Vec::new();
 
@@ -114,6 +141,32 @@ pub fn collect_variant_dependencies(
 }
 
 /* -------------------------------------------------------------------------- */
+/*                        Fn: gen_dependencies_section                        */
+/* -------------------------------------------------------------------------- */
+
+/// `gen_dependencies_section` generates a DEPENDENCIES section with runtime
+/// dependencies and the provided type dependencies.
+pub fn gen_dependencies_section(deps: Vec<Dependency>) -> Section {
+    let mut items = Vec::new();
+
+    // Runtime dependencies.
+    let path_runtime = "res://addons/baproto/runtime";
+    items.push(Assignment::preload("_Reader", format!("{}/reader.gd", path_runtime)).into());
+    items.push(Assignment::preload("_Writer", format!("{}/writer.gd", path_runtime)).into());
+
+    // Type dependencies.
+    for dep in &deps {
+        items.push(Assignment::preload(dep.const_name(), dep.preload_path()).into());
+    }
+
+    SectionBuilder::default()
+        .header("DEPENDENCIES")
+        .body(items)
+        .build()
+        .unwrap()
+}
+
+/* -------------------------------------------------------------------------- */
 /*                       Fn: collect_native_dependencies                      */
 /* -------------------------------------------------------------------------- */
 
@@ -124,7 +177,7 @@ fn collect_native_dependencies(
     current_pkg: &[String],
     current_file_stem: &str,
     seen: &mut HashSet<String>,
-    deps: &mut Vec<(String, String, String)>,
+    deps: &mut Vec<Dependency>,
 ) {
     match native {
         NativeType::Message { descriptor } | NativeType::Enum { descriptor } => {
@@ -139,8 +192,7 @@ fn collect_native_dependencies(
             }
 
             let path = resolve_preload_path(&descriptor.package, &descriptor.path, current_pkg);
-            let const_name = file_stem.clone();
-            deps.push((const_name, file_stem, path));
+            deps.push(Dependency::new(file_stem, path));
         }
         NativeType::Array { element } => {
             collect_native_dependencies(

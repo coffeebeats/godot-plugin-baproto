@@ -176,6 +176,8 @@ pub enum Operator {
     Eq,
     /// `NotEq` is the inequality operator.
     NotEq,
+    /// `Add` is the addition operator.
+    Add,
 }
 
 /* ------------------------------- Impl: Emit ------------------------------- */
@@ -185,6 +187,7 @@ impl Emit for Operator {
         let s = match self {
             Self::Eq => "==",
             Self::NotEq => "!=",
+            Self::Add => "+",
         };
         cw.write(w, s)
     }

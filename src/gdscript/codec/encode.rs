@@ -29,8 +29,8 @@ pub fn gen_encode_stmts(field_name: &str, encoding: &Encoding) -> anyhow::Result
         // Message
         NativeType::Message { .. } => gen_encode_message(field_name),
 
-        // Not yet implemented
-        _ => anyhow::bail!("Unsupported native type: {:?}", encoding.native),
+        // Enum
+        NativeType::Enum { .. } => gen_encode_enum(field_name),
     }
 }
 
@@ -86,8 +86,10 @@ fn gen_encode_bytes(field_name: &str) -> anyhow::Result<Vec<Item>> {
 /// `gen_encode_array` generates encoding for an array field.
 fn gen_encode_array(field_name: &str, element: &Encoding) -> anyhow::Result<Vec<Item>> {
     match &element.native {
-        // Array of messages requires null checks
-        NativeType::Message { .. } => gen_encode_array_message(field_name, element),
+        // Array of messages or enums requires null checks
+        NativeType::Message { .. } | NativeType::Enum { .. } => {
+            gen_encode_array_message(field_name, element)
+        }
 
         // All other types (primitives, bytes, etc.) can be encoded directly
         _ => gen_encode_array_primitive(field_name, element),
@@ -199,13 +201,40 @@ fn gen_encode_message(field_name: &str) -> anyhow::Result<Vec<Item>> {
     Ok(vec![null_check, encode_call])
 }
 
+/* -------------------------- Fn: gen_encode_enum --------------------------- */
+
+/// `gen_encode_enum` generates encoding for an enum field.
+///
+/// # Generated GDScript
+/// ```gdscript
+/// if status == null:
+///     _writer.set_error(ERR_INVALID_DATA)
+///     return
+/// status._encode(_writer)
+/// ```
+fn gen_encode_enum(field_name: &str) -> anyhow::Result<Vec<Item>> {
+    // Null check
+    let null_check = gen_null_check(field_name);
+
+    // Call field._encode(_writer)
+    let encode_call = Item::Expr(FnCall::method_args(
+        Expr::ident(field_name),
+        "_encode",
+        vec![Expr::ident("_writer")],
+    ));
+
+    Ok(vec![null_check, encode_call])
+}
+
 /* --------------------------- Fn: gen_encode_map --------------------------- */
 
 /// `gen_encode_map` generates encoding for a map field.
 fn gen_encode_map(field_name: &str, key: &Encoding, value: &Encoding) -> anyhow::Result<Vec<Item>> {
     match &value.native {
-        // Map of messages requires null checks
-        NativeType::Message { .. } => gen_encode_map_message(field_name, key, value),
+        // Map of messages or enums requires null checks
+        NativeType::Message { .. } | NativeType::Enum { .. } => {
+            gen_encode_map_message(field_name, key, value)
+        }
 
         // All other types (primitives, bytes, etc.) can be encoded directly
         _ => gen_encode_map_primitive(field_name, key, value),

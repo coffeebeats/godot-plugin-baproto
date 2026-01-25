@@ -348,8 +348,9 @@ pub(crate) mod tests {
         assert!(output.files.contains_key(Path::new("mod.gd")));
 
         let content = output.files.get(Path::new("game/state.gd")).unwrap();
-        assert!(content.contains("const IDLE: int = 0"));
-        assert!(content.contains("const MOVING: int = 1"));
+        assert!(content.contains("enum {"));
+        assert!(content.contains("IDLE = 0,"));
+        assert!(content.contains("MOVING = 1,"));
     }
 
     #[test]
@@ -478,9 +479,10 @@ pub(crate) mod tests {
         let player = output.files.get(Path::new("game/player.gd")).unwrap();
         assert!(player.contains("const State := preload(\"./player_state.gd\")"));
 
-        // The nested enum should have the constant.
+        // The nested enum should have the enum declaration.
         let state = output.files.get(Path::new("game/player_state.gd")).unwrap();
-        assert!(state.contains("const ACTIVE: int = 0"));
+        assert!(state.contains("enum {"));
+        assert!(state.contains("ACTIVE = 0,"));
     }
 
     #[test]

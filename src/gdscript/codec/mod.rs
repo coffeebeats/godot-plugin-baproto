@@ -8,6 +8,11 @@ pub use decode::*;
 mod encode;
 pub use encode::*;
 
+/* ---------------------------- Mod: Enumeration ---------------------------- */
+
+mod enumeration;
+pub use enumeration::*;
+
 /* -------------------------------- Mod: Wire ------------------------------- */
 
 mod wire;

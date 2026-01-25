@@ -29,8 +29,8 @@ pub fn gen_decode_stmts(field_name: &str, encoding: &Encoding) -> anyhow::Result
         // Message
         NativeType::Message { descriptor } => gen_decode_message(field_name, descriptor),
 
-        // Not yet implemented
-        _ => anyhow::bail!("Unsupported native type: {:?}", encoding.native),
+        // Enum
+        NativeType::Enum { descriptor } => gen_decode_enum(field_name, descriptor),
     }
 }
 
@@ -81,8 +81,10 @@ fn gen_decode_bytes(field_name: &str) -> anyhow::Result<Vec<Item>> {
 /// `gen_decode_array` generates decoding for an array field.
 fn gen_decode_array(field_name: &str, element: &Encoding) -> anyhow::Result<Vec<Item>> {
     match &element.native {
-        // Array of messages requires construction
-        NativeType::Message { .. } => gen_decode_array_message(field_name, element),
+        // Array of messages or enums requires construction
+        NativeType::Message { .. } | NativeType::Enum { .. } => {
+            gen_decode_array_message(field_name, element)
+        }
 
         // All other types (primitives, bytes, etc.) can be decoded directly
         _ => gen_decode_array_primitive(field_name, element),
@@ -154,10 +156,12 @@ fn gen_decode_array_message(field_name: &str, element: &Encoding) -> anyhow::Res
     // Initialize empty array
     let init = Assignment::reassign(field_name, Expr::empty_array());
 
-    // Get message type name
+    // Get type name
     let type_name = match &element.native {
-        NativeType::Message { descriptor } => descriptor.path.join("_"),
-        _ => anyhow::bail!("Expected message type"),
+        NativeType::Message { descriptor } | NativeType::Enum { descriptor } => {
+            descriptor.path.join("_")
+        }
+        _ => anyhow::bail!("Expected message or enum type"),
     };
 
     // Create message instance: var _item := MessageType.new()
@@ -238,13 +242,50 @@ fn gen_decode_message(
     Ok(vec![Item::Assignment(assignment), decode_call, error_check])
 }
 
+/* -------------------------- Fn: gen_decode_enum --------------------------- */
+
+/// `gen_decode_enum` generates decoding for an enum field.
+///
+/// # Generated GDScript
+/// ```gdscript
+/// status = Status.new()
+/// status._decode(_reader)
+/// if _reader.get_error() != OK:
+///     return _reader.get_error()
+/// ```
+fn gen_decode_enum(
+    field_name: &str,
+    descriptor: &baproto::Descriptor,
+) -> anyhow::Result<Vec<Item>> {
+    // Get enum type name
+    let type_name = descriptor.path.join("_");
+
+    // Create enum instance: field = EnumType.new()
+    let new_call = FnCall::method(Expr::ident(&type_name), "new");
+    let assignment = Assignment::reassign(field_name, new_call);
+
+    // Call field._decode(_reader)
+    let decode_call = Item::Expr(FnCall::method_args(
+        Expr::ident(field_name),
+        "_decode",
+        vec![Expr::ident("_reader")],
+    ));
+
+    // Error check
+    let error_check = gen_reader_error_check();
+
+    Ok(vec![Item::Assignment(assignment), decode_call, error_check])
+}
+
 /* --------------------------- Fn: gen_decode_map --------------------------- */
 
 /// `gen_decode_map` generates decoding for a map field.
 fn gen_decode_map(field_name: &str, key: &Encoding, value: &Encoding) -> anyhow::Result<Vec<Item>> {
     match &value.native {
-        // Map of messages requires construction
-        NativeType::Message { .. } => gen_decode_map_message(field_name, key, value),
+        // Map of messages or enums requires construction
+        NativeType::Message { .. } | NativeType::Enum { .. } => {
+            gen_decode_map_message(field_name, key, value)
+        }
 
         // All other types (primitives, bytes, etc.) can be decoded directly
         _ => gen_decode_map_primitive(field_name, key, value),
@@ -361,10 +402,12 @@ fn gen_decode_map_message(
     // Error check after key read
     let key_error_check = gen_reader_error_check();
 
-    // Get message type name
+    // Get type name
     let type_name = match &value.native {
-        NativeType::Message { descriptor } => descriptor.path.join("_"),
-        _ => anyhow::bail!("Expected message type"),
+        NativeType::Message { descriptor } | NativeType::Enum { descriptor } => {
+            descriptor.path.join("_")
+        }
+        _ => anyhow::bail!("Expected message or enum type"),
     };
 
     // Create message instance: var _value := MessageType.new()

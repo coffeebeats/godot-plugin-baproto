@@ -1,10 +1,12 @@
 use baproto::{CodeWriter, Writer};
 
 use super::Assignment;
+use super::EnumDecl;
 use super::Expr;
 use super::FnDef;
 use super::ForIn;
 use super::If;
+use super::Match;
 
 /* -------------------------------------------------------------------------- */
 /*                                 Enum: Item                                 */
@@ -15,6 +17,9 @@ use super::If;
 pub enum Item {
     /// `Assignment` is a variable declaration or assignment.
     Assignment(Assignment),
+
+    /// `EnumDecl` is an enum declaration.
+    EnumDecl(EnumDecl),
 
     /// `Expr` is an expression (method call, etc.).
     Expr(Expr),
@@ -27,6 +32,9 @@ pub enum Item {
 
     /// If-else conditional.
     If(If),
+
+    /// Match statement.
+    Match(Match),
 
     /// Early return statement.
     Return(Expr),
@@ -64,6 +72,30 @@ impl From<If> for Item {
     }
 }
 
+/* --------------------------- Impl: From<Match> ---------------------------- */
+
+impl From<Match> for Item {
+    fn from(value: Match) -> Self {
+        Self::Match(value)
+    }
+}
+
+/* ------------------------- Impl: From<EnumDecl> --------------------------- */
+
+impl From<EnumDecl> for Item {
+    fn from(value: EnumDecl) -> Self {
+        Self::EnumDecl(value)
+    }
+}
+
+/* ---------------------------- Impl: From<FnDef> --------------------------- */
+
+impl From<FnDef> for Item {
+    fn from(value: FnDef) -> Self {
+        Self::FnDef(value)
+    }
+}
+
 /* ------------------------------- Impl: Emit ------------------------------- */
 
 impl super::Emit for Item {
@@ -71,8 +103,10 @@ impl super::Emit for Item {
         match self {
             Item::Expr(expr) => expr.emit(cw, w),
             Item::Assignment(assignment) => assignment.emit(cw, w),
+            Item::EnumDecl(e) => e.emit(cw, w),
             Item::ForIn(f) => f.emit(cw, w),
             Item::If(i) => i.emit(cw, w),
+            Item::Match(m) => m.emit(cw, w),
             Item::FnDef(f) => f.emit(cw, w),
             Item::Return(expr) => {
                 cw.write(w, "return ")?;

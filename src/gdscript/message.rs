@@ -5,7 +5,7 @@ use crate::gdscript::ast::*;
 use crate::gdscript::codec;
 use crate::gdscript::collect::TypeEntry;
 use crate::gdscript::types::{
-    collect_field_dependencies, default_value, escape_keyword, type_name,
+    collect_field_dependencies, default_value, escape_keyword, gen_dependencies_section, type_name,
 };
 
 /* -------------------------------------------------------------------------- */
@@ -49,25 +49,8 @@ pub fn generate_message(
 /* -------------------------- Fn: gen_dependencies -------------------------- */
 
 fn gen_dependencies(fields: &[Field], pkg: &[String], name: &str) -> Section {
-    let mut items = Vec::new();
-
-    // Runtime dependencies.
-    let path_runtime = "res://addons/baproto/runtime";
-    items.push(Assignment::preload("_Reader", format!("{}/reader.gd", path_runtime)).into());
-    items.push(Assignment::preload("_Writer", format!("{}/writer.gd", path_runtime)).into());
-
-    // Field dependencies.
     let deps = collect_field_dependencies(fields, pkg, name);
-
-    for (name, _, path) in &deps {
-        items.push(Assignment::preload(name, path).into());
-    }
-
-    SectionBuilder::default()
-        .header("DEPENDENCIES")
-        .body(items)
-        .build()
-        .unwrap()
+    gen_dependencies_section(deps)
 }
 
 /* ----------------------------- Fn: gen_fields ----------------------------- */

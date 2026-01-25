@@ -14,18 +14,22 @@ use super::SectionHeader;
 #[derive(Builder, Clone, Debug)]
 pub struct Script {
     /// `header` is top-level file information (usually a warning to not edit).
-    #[builder(default = "Script::generated_warning().into()")]
+    #[builder(
+        default = "Script::generated_warning().into()",
+        setter(into, strip_option)
+    )]
     pub header: Option<Comment>,
 
     /// `comment` is a doc comment for the class.
-    #[builder(default, setter(strip_option))]
+    #[builder(default)]
     pub comment: Option<Comment>,
 
     /// `extends` is the GDScript class that this class inherits from.
+    #[builder(setter(into))]
     pub extends: String,
 
     /// `class_name` is a global name for the class.
-    #[builder(default, setter(into, strip_option))]
+    #[builder(default)]
     pub class_name: Option<String>,
 
     /// `sections` is the content of the script file.

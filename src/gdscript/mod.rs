@@ -40,22 +40,20 @@ mod namespace;
 ///
 /// It generates one file per type (message or enum), organized into package
 /// subdirectories with namespace `mod.gd` files.
-pub struct GDScript {
-    writer: CodeWriter,
-}
+#[derive(Clone, Debug)]
+pub struct GDScript;
 
 /* ----------------------------- Impl: Default -------------------------------- */
 
-impl Default for GDScript {
-    fn default() -> Self {
-        Self {
-            writer: CodeWriterBuilder::default()
-                .comment_token("##".to_owned())
-                .indent_token("\t".to_owned())
-                .newline_token("\n".to_owned())
-                .build()
-                .expect("failed to build CodeWriter"),
-        }
+impl GDScript {
+    /// `writer` creates a new [`CodeWriter`] suited for GDScript files.
+    fn writer() -> CodeWriter {
+        CodeWriterBuilder::default()
+            .comment_token("##".to_owned())
+            .indent_token("\t".to_owned())
+            .newline_token("\n".to_owned())
+            .build()
+            .expect("failed to build CodeWriter")
     }
 }
 
@@ -82,7 +80,7 @@ impl Generator for GDScript {
 
             for entry in &entries {
                 let path = format!("{}/{}.gd", pkg_path, entry.file_stem.to_lowercase());
-                let mut cw = self.writer.clone();
+                let mut cw = GDScript::writer();
 
                 let content = match &entry.kind {
                     TypeKind::Message(msg) => {
@@ -134,7 +132,7 @@ impl Generator for GDScript {
                 .unwrap_or_default();
 
             // Generate mod.gd with both types and subpackages.
-            let mut cw = self.writer.clone();
+            let mut cw = GDScript::writer();
             let content =
                 namespace::generate_namespace(&mut cw, &pkg_name, None, &entries, &subpackages)
                     .map_err(|e| GeneratorError::Generation(e.to_string()))?;
@@ -151,7 +149,7 @@ impl Generator for GDScript {
                 .collect();
             root_subpackages.sort();
 
-            let mut cw = self.writer.clone();
+            let mut cw = GDScript::writer();
             let content =
                 namespace::generate_namespace(&mut cw, "", Some("BAProto"), &[], &root_subpackages)
                     .map_err(|e| GeneratorError::Generation(e.to_string()))?;
@@ -174,18 +172,6 @@ pub(crate) mod tests {
     use super::*;
     use baproto::*;
 
-    /* ------------------------ Tests: GDScript::new ------------------------ */
-
-    #[test]
-    fn test_gdscript_default() {
-        // Given: Default construction.
-        // When: Creating a GDScript generator.
-        let gdscript = GDScript::default();
-
-        // Then: It should have the correct name.
-        assert_eq!(gdscript.name(), "gdscript");
-    }
-
     /* --------------------------- Tests: generate -------------------------- */
 
     #[test]
@@ -194,8 +180,7 @@ pub(crate) mod tests {
         let schema = Schema { packages: vec![] };
 
         // When: Generating code.
-        let gdscript = GDScript::default();
-        let output = gdscript.generate(&schema).unwrap();
+        let output = GDScript.generate(&schema).unwrap();
 
         // Then: No files should be generated.
         assert!(output.files.is_empty());
@@ -213,8 +198,7 @@ pub(crate) mod tests {
         };
 
         // When: Generating code.
-        let gdscript = GDScript::default();
-        let output = gdscript.generate(&schema).unwrap();
+        let output = GDScript.generate(&schema).unwrap();
 
         // Then: Should generate namespace files (test/mod.gd + root mod.gd).
         assert_eq!(output.files.len(), 2);
@@ -245,8 +229,7 @@ pub(crate) mod tests {
         };
 
         // When: Generating code.
-        let gdscript = GDScript::default();
-        let output = gdscript.generate(&schema).unwrap();
+        let output = GDScript.generate(&schema).unwrap();
 
         // Then: Three files should be generated (message + game/mod.gd + root mod.gd).
         assert_eq!(output.files.len(), 3);
@@ -304,8 +287,7 @@ pub(crate) mod tests {
         };
 
         // When: Generating code.
-        let gdscript = GDScript::default();
-        let output = gdscript.generate(&schema).unwrap();
+        let output = GDScript.generate(&schema).unwrap();
 
         // Then: The message file should contain the fields.
         let content = output.files.get(Path::new("game/player.gd")).unwrap();
@@ -355,8 +337,7 @@ pub(crate) mod tests {
         };
 
         // When: Generating code.
-        let gdscript = GDScript::default();
-        let output = gdscript.generate(&schema).unwrap();
+        let output = GDScript.generate(&schema).unwrap();
 
         // Then: Three files should be generated (enum + game/mod.gd + root mod.gd).
         assert_eq!(output.files.len(), 3);
@@ -415,8 +396,7 @@ pub(crate) mod tests {
         };
 
         // When: Generating code.
-        let gdscript = GDScript::default();
-        let output = gdscript.generate(&schema).unwrap();
+        let output = GDScript.generate(&schema).unwrap();
 
         // Then: Four files should be generated (2 types + game/mod.gd + root mod.gd).
         assert_eq!(output.files.len(), 4);
@@ -483,8 +463,7 @@ pub(crate) mod tests {
         };
 
         // When: Generating code.
-        let gdscript = GDScript::default();
-        let output = gdscript.generate(&schema).unwrap();
+        let output = GDScript.generate(&schema).unwrap();
 
         // Then: Four files should be generated (2 types + game/mod.gd + root mod.gd).
         assert_eq!(output.files.len(), 4);
@@ -543,8 +522,7 @@ pub(crate) mod tests {
         };
 
         // When: Generating code.
-        let gdscript = GDScript::default();
-        let output = gdscript.generate(&schema).unwrap();
+        let output = GDScript.generate(&schema).unwrap();
 
         // Then: Six files should be generated.
         // (2 messages + 2 package mod.gd + 1 intermediate game/mod.gd + 1 root mod.gd).
@@ -568,16 +546,5 @@ pub(crate) mod tests {
         // The root mod.gd should reference the game package.
         let root_mod = output.files.get(Path::new("mod.gd")).unwrap();
         assert!(root_mod.contains("const game := preload(\"./game/mod.gd\")"));
-    }
-
-    /* ----------------------- Fn: create_code_writer ----------------------- */
-
-    pub(crate) fn create_code_writer() -> CodeWriter {
-        CodeWriterBuilder::default()
-            .comment_token("##".to_owned())
-            .indent_token("\t".to_owned())
-            .newline_token("\n".to_owned())
-            .build()
-            .unwrap()
     }
 }

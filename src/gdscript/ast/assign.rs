@@ -1,3 +1,4 @@
+use std::path::Path;
 use std::path::PathBuf;
 
 use baproto::{CodeWriter, Writer};
@@ -17,7 +18,7 @@ use super::Expr;
 #[derive(Builder, Clone, Debug, Default)]
 pub struct Assignment {
     /// `comment` is an optional doc comment associated with the assignment.
-    #[builder(default, setter(strip_option))]
+    #[builder(default)]
     pub comment: Option<Comment>,
 
     /// `declaration` is the declaration keyword used.
@@ -29,7 +30,7 @@ pub struct Assignment {
     pub name: String,
 
     /// `type_hint` is an optional type hint associated with the declaration.
-    #[builder(default = Some(TypeHint::Infer), setter(into, strip_option))]
+    #[builder(default = Some(TypeHint::Infer), setter(into))]
     pub type_hint: Option<TypeHint>,
 
     /// `value` is an optional value assigned to the declared variable.
@@ -40,9 +41,63 @@ pub struct Assignment {
 /* ---------------------------- Impl: Assignment ---------------------------- */
 
 impl Assignment {
-    /// `builder` returns a default [`AssignmentBuilder`].
-    pub fn builder() -> AssignmentBuilder {
+    /// `param` creates a function parameter. To create one with a default
+    /// value, see [`Assignment::param_with_default`].
+    pub fn param<T, U>(name: T, hint: U) -> Self
+    where
+        T: AsRef<str>,
+        U: AsRef<str>,
+    {
         AssignmentBuilder::default()
+            .name(name.as_ref())
+            .type_hint(Some(TypeHint::Explicit(hint.as_ref().to_owned())))
+            .build()
+            .unwrap()
+    }
+
+    /// `param` creates a function parameter. To create one without a default
+    /// value, see [`Assignment::param`].
+    pub fn param_with_default<T, U, V>(name: T, hint: U, value: V) -> Self
+    where
+        T: AsRef<str>,
+        U: AsRef<str>,
+        V: Into<Expr>,
+    {
+        AssignmentBuilder::default()
+            .name(name.as_ref())
+            .type_hint(Some(TypeHint::Explicit(hint.as_ref().to_owned())))
+            .value(ValueKind::from(value.into()))
+            .build()
+            .unwrap()
+    }
+
+    /// `preload` creates a script `preload` definition.
+    pub fn preload<T, U>(name: T, path: U) -> Self
+    where
+        T: AsRef<str>,
+        U: AsRef<Path>,
+    {
+        AssignmentBuilder::default()
+            .declaration(DeclarationKind::Const)
+            .name(name.as_ref())
+            .value(ValueKind::Preload(path.as_ref().to_path_buf()))
+            .build()
+            .unwrap()
+    }
+
+    /// `var` creates a type-inferred new variable definition.
+    pub fn var<T, U>(name: T, value: U) -> Self
+    where
+        T: AsRef<str>,
+        U: Into<Expr>,
+    {
+        AssignmentBuilder::default()
+            .declaration(DeclarationKind::Var)
+            .type_hint(TypeHint::Infer)
+            .name(name.as_ref())
+            .value(value.into())
+            .build()
+            .unwrap()
     }
 }
 
@@ -150,9 +205,10 @@ mod tests {
         let mut cw = GDScript::writer();
 
         // Given: A var assignment with a raw value.
-        let assignment = Assignment::builder()
+        let assignment = AssignmentBuilder::default()
             .name("my_var".to_string())
             .declaration(DeclarationKind::Var)
+            .type_hint(None)
             .value(ValueKind::Raw("42".to_string()))
             .build()
             .unwrap();
@@ -176,7 +232,7 @@ mod tests {
         let mut cw = GDScript::writer();
 
         // Given: A const assignment with a preload value.
-        let assignment = Assignment::builder()
+        let assignment = AssignmentBuilder::default()
             .name("MyClass".to_string())
             .declaration(DeclarationKind::Const)
             .value(ValueKind::Preload(PathBuf::from("res://script.gd")))
@@ -192,7 +248,7 @@ mod tests {
         // Then: The output matches expectations.
         assert_eq!(
             s.into_content(),
-            "const MyClass = preload(\"res://script.gd\")"
+            "const MyClass := preload(\"res://script.gd\")"
         );
     }
 
@@ -205,7 +261,7 @@ mod tests {
         let mut cw = GDScript::writer();
 
         // Given: An assignment with inferred type hint.
-        let assignment = Assignment::builder()
+        let assignment = AssignmentBuilder::default()
             .name("value".to_string())
             .declaration(DeclarationKind::Var)
             .type_hint(TypeHint::Infer)
@@ -232,7 +288,7 @@ mod tests {
         let mut cw = GDScript::writer();
 
         // Given: An assignment with explicit type hint.
-        let assignment = Assignment::builder()
+        let assignment = AssignmentBuilder::default()
             .name("count".to_string())
             .declaration(DeclarationKind::Var)
             .type_hint(TypeHint::Explicit("int".to_string()))
@@ -261,7 +317,7 @@ mod tests {
         let mut cw = GDScript::writer();
 
         // Given: An assignment with structured expression value.
-        let assignment = Assignment::builder()
+        let assignment = AssignmentBuilder::default()
             .name("items".to_string())
             .declaration(DeclarationKind::Var)
             .type_hint(TypeHint::Infer)

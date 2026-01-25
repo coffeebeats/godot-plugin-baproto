@@ -1,6 +1,7 @@
+use baproto::NativeType;
 use std::collections::HashSet;
 
-use baproto::NativeType;
+use super::ast::*;
 
 /* -------------------------------------------------------------------------- */
 /*                                Fn: type_name                               */
@@ -18,10 +19,8 @@ pub fn type_name(native: &NativeType) -> String {
             format!("Array[{}]", type_name(&element.native))
         }
         NativeType::Map { .. } => "Dictionary".to_string(),
-        // For message types, we use the file stem as the type name.
         NativeType::Message { descriptor } => descriptor.path.join("_"),
-        // Enums are represented as int in GDScript.
-        NativeType::Enum { .. } => "int".to_string(),
+        NativeType::Enum { .. } => todo!(),
     }
 }
 
@@ -30,17 +29,17 @@ pub fn type_name(native: &NativeType) -> String {
 /* -------------------------------------------------------------------------- */
 
 /// `default_value` returns the GDScript default value for a native type.
-pub fn default_value(native: &NativeType) -> String {
+pub fn default_value(native: &NativeType) -> Expr {
     match native {
-        NativeType::Bool => "false".to_string(),
-        NativeType::Int { .. } => "0".to_string(),
-        NativeType::Float { .. } => "0.0".to_string(),
-        NativeType::String => "\"\"".to_string(),
-        NativeType::Bytes => "PackedByteArray()".to_string(),
-        NativeType::Array { .. } => "[]".to_string(),
-        NativeType::Map { .. } => "{}".to_string(),
-        NativeType::Message { .. } => "null".to_string(),
-        NativeType::Enum { .. } => "0".to_string(),
+        NativeType::Array { .. } => Expr::empty_array(),
+        NativeType::Bool => Literal::Bool(false).into(),
+        NativeType::Bytes => Expr::Raw(format!("PackedByteArray()")),
+        NativeType::Enum { .. } => todo!(),
+        NativeType::Float { .. } => Literal::Float(0.0).into(),
+        NativeType::Int { .. } => Literal::Int(0).into(),
+        NativeType::Map { .. } => Expr::empty_dict(),
+        NativeType::Message { .. } => Expr::null(),
+        NativeType::String => Literal::String("".to_owned()).into(),
     }
 }
 
@@ -99,12 +98,10 @@ fn collect_native_dependencies(
         NativeType::Message { descriptor } | NativeType::Enum { descriptor } => {
             let file_stem = descriptor.path.join("_");
 
-            // Skip if this is a nested type within the current message.
             if file_stem.starts_with(&format!("{}_", current_file_stem)) {
                 return;
             }
 
-            // Skip if already seen.
             if !seen.insert(file_stem.clone()) {
                 return;
             }
@@ -361,7 +358,7 @@ mod tests {
         let result = default_value(&native);
 
         // Then: It should be "false".
-        assert_eq!(result, "false");
+        assert_eq!(result, Expr::Literal(Literal::Bool(false)));
     }
 
     #[test]
@@ -376,7 +373,7 @@ mod tests {
         let result = default_value(&native);
 
         // Then: It should be "0".
-        assert_eq!(result, "0");
+        assert_eq!(result, Expr::Literal(Literal::Int(0)));
     }
 
     #[test]
@@ -388,7 +385,7 @@ mod tests {
         let result = default_value(&native);
 
         // Then: It should be empty string literal.
-        assert_eq!(result, "\"\"");
+        assert_eq!(result, Expr::Literal(Literal::String(format!(""))));
     }
 
     /* --------------------- Tests: resolve_preload_path -------------------- */

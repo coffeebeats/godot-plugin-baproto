@@ -57,6 +57,11 @@ impl Expr {
     pub fn empty_dict() -> Expr {
         Expr::Literal(Literal::Dict(vec![]))
     }
+
+    /// `null` creates an expression for GDScript's `null`.
+    pub fn null() -> Expr {
+        Expr::Raw(format!("null"))
+    }
 }
 
 /* ------------------------- Impl: From<AsRef<str>> ------------------------- */
@@ -238,7 +243,15 @@ impl Emit for Literal {
         match self {
             Self::Bool(b) => cw.write(w, if *b { "true" } else { "false" }),
             Self::Int(i) => cw.write(w, &i.to_string()),
-            Self::Float(f) => cw.write(w, &f.to_string()),
+            Self::Float(f) => {
+                let s = if f.fract().abs() < f32::EPSILON {
+                    &format!("{:.1}", f)
+                } else {
+                    &f.to_string()
+                };
+
+                cw.write(w, s)
+            }
             Self::String(s) => cw.write(w, &format!("\"{}\"", s)),
             Self::Array(elements) => {
                 cw.write(w, "[")?;
@@ -292,6 +305,50 @@ pub struct FnCall {
 /* ------------------------------ Impl: FnCall ------------------------------ */
 
 impl FnCall {
+    /// `assert` creates a function call [`Expr`] representing a GDScript
+    /// assertion.
+    pub fn assert<T, U>(condition: T, message: U) -> Expr
+    where
+        T: Into<Expr>,
+        U: AsRef<str>,
+    {
+        FnCall {
+            args: vec![condition.into(), message.into()],
+            name: "assert".to_owned(),
+            receiver: None,
+        }
+        .into()
+    }
+
+    /// `function` creates a standalone function call [`Expr`]. To call a
+    /// function with arguments, see [`FnCall::function_args`].
+    pub fn function<T>(name: T) -> Expr
+    where
+        T: AsRef<str>,
+    {
+        FnCall {
+            args: Vec::default(),
+            name: name.as_ref().to_owned(),
+            receiver: None,
+        }
+        .into()
+    }
+
+    /// `function` creates a standalone function call [`Expr`]. To call a
+    /// function without arguments, see [`FnCall::function`].
+    pub fn function_args<T, U>(name: T, args: Vec<U>) -> Expr
+    where
+        T: AsRef<str>,
+        U: Into<Expr>,
+    {
+        FnCall {
+            args: args.into_iter().map(|i| i.into()).collect(),
+            name: name.as_ref().to_owned(),
+            receiver: None,
+        }
+        .into()
+    }
+
     /// `method` creates a function call [`Expr`] on the provided receiver. To
     /// call a method with arguments, see [`FnCall::method_args`].
     pub fn method<T, U>(receiver: T, name: U) -> Expr

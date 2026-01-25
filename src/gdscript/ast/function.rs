@@ -18,7 +18,7 @@ use super::TypeHint;
 #[builder(setter(into))]
 pub struct FnDef {
     /// `comment` is a doc comment for the function.
-    #[builder(default, setter(strip_option))]
+    #[builder(default, setter(into, strip_option))]
     pub comment: Option<Comment>,
 
     /// `name` is the name of the function.
@@ -29,11 +29,14 @@ pub struct FnDef {
     pub params: Vec<Assignment>,
 
     /// `type_hint` is the function's return type hint.
-    #[builder(default, setter(into, strip_option))]
+    #[builder(
+        default = Some(TypeHint::Explicit("void".to_owned())),
+        setter(into, strip_option),
+    )]
     pub type_hint: Option<TypeHint>,
 
     /// `body` is the function's contents.
-    #[builder(default)]
+    #[builder(default, setter(into))]
     pub body: Block,
 
     /// `return_value` is an optional return expression at the end of the
@@ -52,8 +55,11 @@ impl Emit for FnDef {
 
         cw.write(w, &format!("func {}(", self.name))?;
 
-        for param in &self.params {
+        for (i, param) in self.params.iter().enumerate() {
             param.emit(cw, w)?;
+            if i < self.params.len() - 1 {
+                cw.write(w, ", ")?;
+            }
         }
 
         cw.write(w, ")")?;
@@ -126,7 +132,7 @@ impl Emit for Block {
 mod tests {
     use baproto::StringWriter;
 
-    use crate::gdscript::GDScript;
+    use crate::gdscript::{GDScript, ast::Literal};
 
     use super::*;
 
@@ -196,16 +202,8 @@ mod tests {
             comment: None,
             name: "add".to_string(),
             params: vec![
-                Assignment::builder()
-                    .name("a".to_string())
-                    .value(super::super::ValueKind::Raw("0".to_string()))
-                    .build()
-                    .unwrap(),
-                Assignment::builder()
-                    .name("b".to_string())
-                    .value(super::super::ValueKind::Raw("0".to_string()))
-                    .build()
-                    .unwrap(),
+                Assignment::param_with_default("a", "int", Literal::Int(0)),
+                Assignment::param_with_default("b", "int", Literal::Int(0)),
             ],
             type_hint: None,
             body: Block::default(),
@@ -219,7 +217,10 @@ mod tests {
         assert!(result.is_ok());
 
         // Then: The output matches expectations.
-        assert_eq!(s.into_content(), "func add(a = 0b = 0):\n\tpass\n");
+        assert_eq!(
+            s.into_content(),
+            "func add(a: int = 0, b: int = 0):\n\tpass\n"
+        );
     }
 
     #[test]

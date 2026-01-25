@@ -32,5 +32,5 @@ pub struct Args {
 /// `args.out` directory.
 #[allow(unused)]
 pub fn handle(args: Args) -> anyhow::Result<()> {
-    baproto::compile(args.files, args.import_roots, args.out, GDScript::default())
+    baproto::compile(args.files, args.import_roots, args.out, GDScript)
 }

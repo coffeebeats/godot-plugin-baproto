@@ -1,6 +1,37 @@
+use baproto::NativeType;
 use std::collections::HashSet;
 
-use baproto::NativeType;
+use super::ast::*;
+
+/* -------------------------------------------------------------------------- */
+/*                             Struct: Dependency                             */
+/* -------------------------------------------------------------------------- */
+
+/// `Dependency` represents a type dependency requiring a preload statement.
+pub struct Dependency {
+    const_name: String,
+    preload_path: String,
+}
+
+impl Dependency {
+    /// `new` creates a new dependency.
+    fn new(const_name: String, preload_path: String) -> Self {
+        Self {
+            const_name,
+            preload_path,
+        }
+    }
+
+    /// `const_name` returns the constant name for the preload statement.
+    pub fn const_name(&self) -> &str {
+        &self.const_name
+    }
+
+    /// `preload_path` returns the relative path for the preload statement.
+    pub fn preload_path(&self) -> &str {
+        &self.preload_path
+    }
+}
 
 /* -------------------------------------------------------------------------- */
 /*                                Fn: type_name                               */
@@ -18,10 +49,9 @@ pub fn type_name(native: &NativeType) -> String {
             format!("Array[{}]", type_name(&element.native))
         }
         NativeType::Map { .. } => "Dictionary".to_string(),
-        // For message types, we use the file stem as the type name.
-        NativeType::Message { descriptor } => descriptor.path.join("_"),
-        // Enums are represented as int in GDScript.
-        NativeType::Enum { .. } => "int".to_string(),
+        NativeType::Message { descriptor } | NativeType::Enum { descriptor } => {
+            descriptor.path.join("_")
+        }
     }
 }
 
@@ -30,17 +60,17 @@ pub fn type_name(native: &NativeType) -> String {
 /* -------------------------------------------------------------------------- */
 
 /// `default_value` returns the GDScript default value for a native type.
-pub fn default_value(native: &NativeType) -> String {
+pub fn default_value(native: &NativeType) -> Expr {
     match native {
-        NativeType::Bool => "false".to_string(),
-        NativeType::Int { .. } => "0".to_string(),
-        NativeType::Float { .. } => "0.0".to_string(),
-        NativeType::String => "\"\"".to_string(),
-        NativeType::Bytes => "PackedByteArray()".to_string(),
-        NativeType::Array { .. } => "[]".to_string(),
-        NativeType::Map { .. } => "{}".to_string(),
-        NativeType::Message { .. } => "null".to_string(),
-        NativeType::Enum { .. } => "0".to_string(),
+        NativeType::Array { .. } => Expr::empty_array(),
+        NativeType::Bool => Literal::Bool(false).into(),
+        NativeType::Bytes => FnCall::function("PackedByteArray"),
+        NativeType::Enum { .. } => Expr::null(),
+        NativeType::Float { .. } => Literal::Float(0.0).into(),
+        NativeType::Int { .. } => Literal::Int(0).into(),
+        NativeType::Map { .. } => Expr::empty_dict(),
+        NativeType::Message { .. } => Expr::null(),
+        NativeType::String => Literal::String("".to_owned()).into(),
     }
 }
 
@@ -59,13 +89,11 @@ pub fn pkg_to_path(pkg: &[String]) -> String {
 
 /// `collect_field_dependencies` collects all external type dependencies from
 /// the fields of a message (message and enum types that need preloads).
-///
-/// Returns a vector of `(const_name, file_stem, preload_path)` tuples.
 pub fn collect_field_dependencies(
     fields: &[baproto::Field],
     current_pkg: &[String],
     current_file_stem: &str,
-) -> Vec<(String, String, String)> {
+) -> Vec<Dependency> {
     let mut seen = HashSet::new();
     let mut deps = Vec::new();
 
@@ -83,6 +111,62 @@ pub fn collect_field_dependencies(
 }
 
 /* -------------------------------------------------------------------------- */
+/*                      Fn: collect_variant_dependencies                      */
+/* -------------------------------------------------------------------------- */
+
+/// `collect_variant_dependencies` collects all external type dependencies from
+/// the variants of an enum (message and enum types that need preloads).
+pub fn collect_variant_dependencies(
+    variants: &[baproto::Variant],
+    current_pkg: &[String],
+    current_file_stem: &str,
+) -> Vec<Dependency> {
+    let mut seen = HashSet::new();
+    let mut deps = Vec::new();
+
+    for variant in variants {
+        match variant {
+            baproto::Variant::Unit { .. } => {}
+            baproto::Variant::Field { field, .. } => collect_native_dependencies(
+                &field.encoding.native,
+                current_pkg,
+                current_file_stem,
+                &mut seen,
+                &mut deps,
+            ),
+        };
+    }
+
+    deps
+}
+
+/* -------------------------------------------------------------------------- */
+/*                        Fn: gen_dependencies_section                        */
+/* -------------------------------------------------------------------------- */
+
+/// `gen_dependencies_section` generates a DEPENDENCIES section with runtime
+/// dependencies and the provided type dependencies.
+pub fn gen_dependencies_section(deps: Vec<Dependency>) -> Section {
+    let mut items = Vec::new();
+
+    // Runtime dependencies.
+    let path_runtime = "res://addons/baproto/runtime";
+    items.push(Assignment::preload("_Reader", format!("{}/reader.gd", path_runtime)).into());
+    items.push(Assignment::preload("_Writer", format!("{}/writer.gd", path_runtime)).into());
+
+    // Type dependencies.
+    for dep in &deps {
+        items.push(Assignment::preload(dep.const_name(), dep.preload_path()).into());
+    }
+
+    SectionBuilder::default()
+        .header("DEPENDENCIES")
+        .body(items)
+        .build()
+        .unwrap()
+}
+
+/* -------------------------------------------------------------------------- */
 /*                       Fn: collect_native_dependencies                      */
 /* -------------------------------------------------------------------------- */
 
@@ -93,25 +177,22 @@ fn collect_native_dependencies(
     current_pkg: &[String],
     current_file_stem: &str,
     seen: &mut HashSet<String>,
-    deps: &mut Vec<(String, String, String)>,
+    deps: &mut Vec<Dependency>,
 ) {
     match native {
         NativeType::Message { descriptor } | NativeType::Enum { descriptor } => {
             let file_stem = descriptor.path.join("_");
 
-            // Skip if this is a nested type within the current message.
             if file_stem.starts_with(&format!("{}_", current_file_stem)) {
                 return;
             }
 
-            // Skip if already seen.
             if !seen.insert(file_stem.clone()) {
                 return;
             }
 
             let path = resolve_preload_path(&descriptor.package, &descriptor.path, current_pkg);
-            let const_name = file_stem.clone();
-            deps.push((const_name, file_stem, path));
+            deps.push(Dependency::new(file_stem, path));
         }
         NativeType::Array { element } => {
             collect_native_dependencies(
@@ -361,7 +442,7 @@ mod tests {
         let result = default_value(&native);
 
         // Then: It should be "false".
-        assert_eq!(result, "false");
+        assert_eq!(result, Expr::Literal(Literal::Bool(false)));
     }
 
     #[test]
@@ -376,7 +457,7 @@ mod tests {
         let result = default_value(&native);
 
         // Then: It should be "0".
-        assert_eq!(result, "0");
+        assert_eq!(result, Expr::Literal(Literal::Int(0)));
     }
 
     #[test]
@@ -388,7 +469,7 @@ mod tests {
         let result = default_value(&native);
 
         // Then: It should be empty string literal.
-        assert_eq!(result, "\"\"");
+        assert_eq!(result, Expr::Literal(Literal::String(String::new())));
     }
 
     /* --------------------- Tests: resolve_preload_path -------------------- */

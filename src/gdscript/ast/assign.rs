@@ -133,8 +133,6 @@ pub enum DeclarationKind {
 /// `ValueKind` specifies the type of assignment.
 #[derive(Clone, Debug, PartialEq)]
 pub enum ValueKind {
-    /// `Raw` is a raw [`String`] on the right-hand side of the statement.
-    Raw(String),
     /// `Preload` is a preload statement for the specified file.
     Preload(PathBuf),
     /// `Expr` is a structured expression on the right-hand side.
@@ -167,7 +165,6 @@ pub enum TypeHint {
 /// `emit_value` emits a value for an assignment.
 fn emit_value<W: Writer>(value: &ValueKind, cw: &mut CodeWriter, w: &mut W) -> anyhow::Result<()> {
     match value {
-        ValueKind::Raw(s) => cw.write(w, &format!(" {}", s)),
         ValueKind::Preload(p) => cw.write(w, &format!(" preload(\"{}\")", p.display())),
         ValueKind::Expr(expr) => {
             cw.write(w, " ")?;
@@ -230,37 +227,11 @@ mod tests {
     use baproto::StringWriter;
 
     use crate::gdscript::GDScript;
+    use crate::gdscript::ast::Literal;
 
     use super::*;
 
     /* -------------------------- Tests: Assignment ------------------------- */
-
-    #[test]
-    fn test_assignment_var_with_raw_value() {
-        // Given: A string to write to.
-        let mut s = StringWriter::default();
-
-        // Given: A code writer to write with.
-        let mut cw = GDScript::writer();
-
-        // Given: A var assignment with a raw value.
-        let assignment = AssignmentBuilder::default()
-            .variable("my_var".to_string())
-            .declaration(DeclarationKind::Var)
-            .type_hint(None)
-            .value(ValueKind::Raw("42".to_string()))
-            .build()
-            .unwrap();
-
-        // When: The assignment is serialized to source code.
-        let result = assignment.emit(&mut cw, &mut s);
-
-        // Then: There was no error.
-        assert!(result.is_ok());
-
-        // Then: The output matches expectations.
-        assert_eq!(s.into_content(), "var my_var = 42");
-    }
 
     #[test]
     fn test_assignment_const_with_preload() {
@@ -304,7 +275,7 @@ mod tests {
             .variable("value".to_string())
             .declaration(DeclarationKind::Var)
             .type_hint(TypeHint::Infer)
-            .value(ValueKind::Raw("\"hello\"".to_string()))
+            .value(Expr::Literal(Literal::from("hello")))
             .build()
             .unwrap();
 
@@ -331,7 +302,7 @@ mod tests {
             .variable("count".to_string())
             .declaration(DeclarationKind::Var)
             .type_hint(TypeHint::Explicit("int".to_string()))
-            .value(ValueKind::Raw("0".to_string()))
+            .value(Expr::from(Literal::Int(0)))
             .build()
             .unwrap();
 

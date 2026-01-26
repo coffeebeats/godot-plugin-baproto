@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.8 (2026-01-26)
+
+## What's Changed
+* fix: optimize binaries for size by @coffeebeats in https://github.com/coffeebeats/godot-plugin-baproto/pull/40
+* fix(ci): check out correct branch when releasing by @coffeebeats in https://github.com/coffeebeats/godot-plugin-baproto/pull/42
+
+
+**Full Changelog**: https://github.com/coffeebeats/godot-plugin-baproto/compare/v0.1.7...v0.1.8
+
 ## 0.1.7 (2026-01-26)
 
 ## What's Changed

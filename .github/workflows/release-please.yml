@@ -126,12 +126,16 @@ jobs:
 
       - name: Extract artifacts
         run: |
+          # Clean existing binaries from target branch
+          find ./bin -type f -executable -delete
+          find ./bin -type f -name "*.exe" -delete
+
           extract() {
             DIR_NAME="$1"       # Directory name (darwin-*, linux-*, windows-*)
             ARCHIVE_NAME="$2"   # Archive name component (macos-*, linux-*, windows-*)
             EXT="$3"
 
-            mkdir bin/$DIR_NAME
+            mkdir -p bin/$DIR_NAME
 
             FILE="bin/baproto-gdscript-${{ needs.release-please.outputs.release-tag }}-${ARCHIVE_NAME}.${EXT}"
             if [[ "$EXT" == 'zip' ]]; then

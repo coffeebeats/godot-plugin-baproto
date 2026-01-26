@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.6 (2026-01-26)
+
+## What's Changed
+* fix(ci): check out target branch before downloading build artifacts by @coffeebeats in https://github.com/coffeebeats/godot-plugin-baproto/pull/36
+
+
+**Full Changelog**: https://github.com/coffeebeats/godot-plugin-baproto/compare/v0.1.5...v0.1.6
+
 ## 0.1.5 (2026-01-26)
 
 ## What's Changed

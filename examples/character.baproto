@@ -1,0 +1,27 @@
+// Character Data Example
+// RPG-style character stats, equipment, and progression
+
+package examples.character;
+
+// Character class/archetype
+enum Job {
+    0: Warrior;
+    1: Mage;
+    2: Rogue;
+    3: Cleric;
+    4: Ranger;
+}
+
+// Core character attributes
+message Character {
+    // Primary stats
+
+    0: u16 strength;
+    1: u16 dexterity;
+    2: u16 intelligence;
+    3: u16 vitality;
+    4: u16 wisdom;
+    5: u16 luck;
+
+    6: Job job;
+}

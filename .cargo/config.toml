@@ -1,2 +1,9 @@
 [build]
   target-dir = ".target"
+
+[profile.release]
+  opt-level     = "z"     # Aggressively optimize for size.
+  strip         = true
+  lto           = true
+  codegen-units = 1       # Reduce parallel compilation to improve optimization.
+  panic         = "abort"

@@ -97,24 +97,8 @@ jobs:
     timeout-minutes: 5
 
     steps:
-      # Step 1. Check out 'main' temporarily to read '.godot-version'.
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
-
-      # Step 2. Check out the target branch before downloading artifacts.
-
-      - uses: coffeebeats/godot-infra/.github/actions/parse-godot-version@v3
-        id: version
-        with:
-          gdenv-pin-path: .godot-version
-
-      - name: "Determine target branch"
-        id: branch
-        run: |
-          echo "name=godot-v${{ steps.version.outputs.major-minor }}" >> $GITHUB_OUTPUT
-
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
         with:
-          ref: ${{ steps.branch.outputs.name }}
           submodules: true
 
       # ------------------------- Download: Binaries ------------------------- #
@@ -158,6 +142,11 @@ jobs:
 
       # --------------------------- Publish: Plugin -------------------------- #
 
+      - uses: coffeebeats/godot-infra/.github/actions/parse-godot-version@v3
+        id: version
+        with:
+          gdenv-pin-path: .godot-version
+
       - name: Determine plugin name
         id: subfolder
         shell: bash
@@ -166,7 +155,7 @@ jobs:
       - uses: coffeebeats/godot-infra/package-addon@v3
         with:
           subfolder: ${{ steps.subfolder.outputs.name }}
-          target-branch: ${{ steps.branch.outputs.name }}
+          target-branch: "godot-v${{ steps.version.outputs.major-minor }}"
           godot-editor-version: "v${{ steps.version.outputs.semantic }}"
           file-excludes: |
             **/*_test.gd

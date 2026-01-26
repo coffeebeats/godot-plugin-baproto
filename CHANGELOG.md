@@ -1,5 +1,44 @@
 # Changelog
 
+## 0.1.8 (2026-01-26)
+
+## What's Changed
+* fix: optimize binaries for size by @coffeebeats in https://github.com/coffeebeats/godot-plugin-baproto/pull/40
+* fix(ci): check out correct branch when releasing by @coffeebeats in https://github.com/coffeebeats/godot-plugin-baproto/pull/42
+
+
+**Full Changelog**: https://github.com/coffeebeats/godot-plugin-baproto/compare/v0.1.7...v0.1.8
+
+## 0.1.7 (2026-01-26)
+
+## What's Changed
+* fix(ci): delete prior binaries when building by @coffeebeats in https://github.com/coffeebeats/godot-plugin-baproto/pull/38
+
+
+**Full Changelog**: https://github.com/coffeebeats/godot-plugin-baproto/compare/v0.1.6...v0.1.7
+
+## 0.1.6 (2026-01-26)
+
+## What's Changed
+* fix(ci): check out target branch before downloading build artifacts by @coffeebeats in https://github.com/coffeebeats/godot-plugin-baproto/pull/36
+
+
+**Full Changelog**: https://github.com/coffeebeats/godot-plugin-baproto/compare/v0.1.5...v0.1.6
+
+## 0.1.5 (2026-01-26)
+
+## What's Changed
+* feat: create a `baproto` runtime for reading and writing to bitstreams by @coffeebeats in https://github.com/coffeebeats/godot-plugin-baproto/pull/28
+* feat(generate): create GDScript source code generator by @coffeebeats in https://github.com/coffeebeats/godot-plugin-baproto/pull/30
+* feat(generate): implement serialization and deserialization of generated types by @coffeebeats in https://github.com/coffeebeats/godot-plugin-baproto/pull/31
+* feat(import): create an `EditorImportPlugin` for compiling schema files by @coffeebeats in https://github.com/coffeebeats/godot-plugin-baproto/pull/32
+* fix(plugin): address compilation issues in messages; remove runtime autoload by @coffeebeats in https://github.com/coffeebeats/godot-plugin-baproto/pull/33
+* refactor(gdscript): make AST nodes, generation more composable and maintainable by @coffeebeats in https://github.com/coffeebeats/godot-plugin-baproto/pull/34
+* fix(gdscript): allow early returns; fix assertion messages by @coffeebeats in https://github.com/coffeebeats/godot-plugin-baproto/pull/35
+
+
+**Full Changelog**: https://github.com/coffeebeats/godot-plugin-baproto/compare/v0.1.4...v0.1.5
+
 ## 0.1.4 (2026-01-18)
 
 ## What's Changed

@@ -477,7 +477,7 @@ func _encode(_writer: _Writer) -> void:
 	for _item in items:
 		if _item == null:
 			_writer.set_error(ERR_INVALID_DATA)
-			return null
+			return
 		_item._encode(_writer)
 
 ## `_decode` deserializes fields from the reader.
@@ -731,7 +731,7 @@ func _encode(_writer: _Writer) -> void:
 		var _value := players[_key]
 		if _value == null:
 			_writer.set_error(ERR_INVALID_DATA)
-			return null
+			return
 		_value._encode(_writer)
 
 ## `_decode` deserializes fields from the reader.
@@ -860,7 +860,7 @@ func deserialize(data: PackedByteArray) -> Error:
 func _encode(_writer: _Writer) -> void:
 	if stats == null:
 		_writer.set_error(ERR_INVALID_DATA)
-		return null
+		return
 	stats._encode(_writer)
 
 ## `_decode` deserializes fields from the reader.
@@ -1218,7 +1218,7 @@ func _encode(_writer: _Writer) -> void:
 	for _item in items:
 		if _item == null:
 			_writer.set_error(ERR_INVALID_DATA)
-			return null
+			return
 		_item._encode(_writer)
 	_writer.write_varint_unsigned(metadata.size())
 	for _key in metadata:
@@ -1226,7 +1226,7 @@ func _encode(_writer: _Writer) -> void:
 		_writer.write_u32(metadata[_key])
 	if nested == null:
 		_writer.set_error(ERR_INVALID_DATA)
-		return null
+		return
 	nested._encode(_writer)
 
 ## `_decode` deserializes fields from the reader.

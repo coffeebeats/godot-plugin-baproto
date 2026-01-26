@@ -383,7 +383,7 @@ fn gen_null_check(field_name: &str) -> Item {
         vec![Expr::ident("ERR_INVALID_DATA")],
     ));
 
-    let return_stmt = Item::Return(Expr::null());
+    let return_stmt = Item::Return(None);
 
     Item::If(
         IfBuilder::default()
@@ -431,7 +431,7 @@ mod tests {
 
         let expected = r#"if player == null:
 	_writer.set_error(ERR_INVALID_DATA)
-	return null"#;
+	return"#;
 
         assert_eq!(actual, expected);
     }
@@ -933,7 +933,7 @@ mod tests {
         let expected = r#"for _item in players:
 	if _item == null:
 		_writer.set_error(ERR_INVALID_DATA)
-		return null
+		return
 	_item._encode(_writer)"#;
 
         assert_eq!(actual, expected);
@@ -1040,7 +1040,7 @@ mod tests {
 	var _value := players[_key]
 	if _value == null:
 		_writer.set_error(ERR_INVALID_DATA)
-		return null
+		return
 	_value._encode(_writer)"#;
 
         assert_eq!(actual, expected);
@@ -1080,7 +1080,7 @@ mod tests {
 
         let expected1 = r#"if player == null:
 	_writer.set_error(ERR_INVALID_DATA)
-	return null"#;
+	return"#;
 
         assert_eq!(actual1, expected1);
 

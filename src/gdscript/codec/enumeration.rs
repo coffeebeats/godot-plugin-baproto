@@ -41,7 +41,7 @@ pub fn gen_enum_encode_stmts(variants: &[Variant]) -> anyhow::Result<Vec<Item>> 
                 vec![Expr::ident("ERR_INVALID_DATA")],
             )
             .into(),
-            Item::Return(Expr::null()),
+            Item::Return(None),
         ]))
         .build()?;
 
@@ -136,10 +136,10 @@ pub fn gen_enum_decode_stmts(variants: &[Variant]) -> anyhow::Result<Vec<Item>> 
             Operator::NotEq,
             Expr::ident("OK"),
         ))
-        .then_body(Block::from(vec![Item::Return(FnCall::method(
+        .then_body(Block::from(vec![Item::Return(Some(FnCall::method(
             Expr::ident("_reader"),
             "get_error",
-        ))]))
+        )))]))
         .build()?;
 
     stmts.push(error_check.into());
@@ -157,7 +157,7 @@ pub fn gen_enum_decode_stmts(variants: &[Variant]) -> anyhow::Result<Vec<Item>> 
                 vec![Expr::ident("ERR_INVALID_DATA")],
             )
             .into(),
-            Item::Return(FnCall::method(Expr::ident("_reader"), "get_error")),
+            Item::Return(Some(FnCall::method(Expr::ident("_reader"), "get_error"))),
         ]),
     });
 
@@ -191,10 +191,10 @@ pub fn gen_enum_decode_stmts(variants: &[Variant]) -> anyhow::Result<Vec<Item>> 
                         Operator::NotEq,
                         Expr::ident("OK"),
                     ))
-                    .then_body(Block::from(vec![Item::Return(FnCall::method(
+                    .then_body(Block::from(vec![Item::Return(Some(FnCall::method(
                         Expr::ident("_reader"),
                         "get_error",
-                    ))]))
+                    )))]))
                     .build()?;
 
                 match_arms.push(MatchArm {
@@ -213,10 +213,10 @@ pub fn gen_enum_decode_stmts(variants: &[Variant]) -> anyhow::Result<Vec<Item>> 
     stmts.push(match_stmt.into());
 
     // Final return
-    stmts.push(Item::Return(FnCall::method(
+    stmts.push(Item::Return(Some(FnCall::method(
         Expr::ident("_reader"),
         "get_error",
-    )));
+    ))));
 
     Ok(stmts)
 }

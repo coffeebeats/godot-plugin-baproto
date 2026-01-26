@@ -154,7 +154,7 @@ fn gen_discriminant_methods() -> Vec<FnDef> {
         .name("which")
         .comment("`which` returns the current discriminant.")
         .type_hint(TypeHint::Explicit("int".to_string()))
-        .body(vec![Item::Return(Expr::ident("_discriminant"))])
+        .body(vec![Item::Return(Some(Expr::ident("_discriminant")))])
         .build()
         .unwrap();
     methods.push(which_func);
@@ -164,11 +164,11 @@ fn gen_discriminant_methods() -> Vec<FnDef> {
         .name("is_none")
         .comment("`is_none` checks if the enum is unset.")
         .type_hint(TypeHint::Explicit("bool".to_string()))
-        .body(vec![Item::Return(Expr::binary_op(
+        .body(vec![Item::Return(Some(Expr::binary_op(
             Expr::ident("_discriminant"),
             Operator::Eq,
             Expr::ident("NONE"),
-        ))])
+        )))])
         .build()
         .unwrap();
     methods.push(is_none_func);
@@ -204,11 +204,11 @@ fn gen_accessor_methods(variants: &[Variant]) -> Vec<FnDef> {
                 let has_func = FnDefBuilder::default()
                     .name(format!("has_{}", snake_name))
                     .type_hint(TypeHint::Explicit("bool".to_string()))
-                    .body(vec![Item::Return(Expr::binary_op(
+                    .body(vec![Item::Return(Some(Expr::binary_op(
                         Expr::ident("_discriminant"),
                         Operator::Eq,
                         Expr::ident(&variant_const),
-                    ))])
+                    )))])
                     .build()
                     .unwrap();
                 methods.push(has_func);
@@ -258,11 +258,11 @@ fn gen_accessor_methods(variants: &[Variant]) -> Vec<FnDef> {
                 let has_func = FnDefBuilder::default()
                     .name(format!("has_{}", snake_name))
                     .type_hint(TypeHint::Explicit("bool".to_string()))
-                    .body(vec![Item::Return(Expr::binary_op(
+                    .body(vec![Item::Return(Some(Expr::binary_op(
                         Expr::ident("_discriminant"),
                         Operator::Eq,
                         Expr::ident(&variant_const),
-                    ))])
+                    )))])
                     .build()
                     .unwrap();
                 methods.push(has_func);
@@ -278,11 +278,11 @@ fn gen_accessor_methods(variants: &[Variant]) -> Vec<FnDef> {
                                 Operator::Eq,
                                 Expr::ident(&variant_const),
                             ))
-                            .then_body(Block::from(vec![Item::Return(Expr::ident("_value"))]))
+                            .then_body(Block::from(vec![Item::Return(Some(Expr::ident("_value")))]))
                             .build()
                             .unwrap()
                             .into(),
-                        Item::Return(default_val),
+                        Item::Return(Some(default_val)),
                     ])
                     .build()
                     .unwrap();
@@ -358,7 +358,7 @@ fn gen_serialization_methods() -> Vec<FnDef> {
                 vec![FnCall::method(Expr::ident("_writer"), "to_bytes")],
             )
             .into(),
-            Item::Return(FnCall::method(Expr::ident("_writer"), "get_error")),
+            Item::Return(Some(FnCall::method(Expr::ident("_writer"), "get_error"))),
         ])
         .build()
         .unwrap();
@@ -378,7 +378,7 @@ fn gen_serialization_methods() -> Vec<FnDef> {
             .into(),
             FnCall::method_args(Expr::ident("self"), "_decode", vec![Expr::ident("_reader")])
                 .into(),
-            Item::Return(FnCall::method(Expr::ident("_reader"), "get_error")),
+            Item::Return(Some(FnCall::method(Expr::ident("_reader"), "get_error"))),
         ])
         .build()
         .unwrap();
@@ -425,7 +425,7 @@ fn gen_to_string_method(variants: &[Variant]) -> FnDef {
     // NONE case
     match_arms.push(MatchArm {
         pattern: Expr::ident("NONE"),
-        body: Block::from(vec![Item::Return(Expr::from("\"<NONE>\""))]),
+        body: Block::from(vec![Item::Return(Some(Expr::from("\"<NONE>\"")))]),
     });
 
     // Variant cases
@@ -435,14 +435,17 @@ fn gen_to_string_method(variants: &[Variant]) -> FnDef {
                 let variant_const = escape_keyword(name);
                 match_arms.push(MatchArm {
                     pattern: Expr::ident(&variant_const),
-                    body: Block::from(vec![Item::Return(Expr::from(format!("\"{}\"", name)))]),
+                    body: Block::from(vec![Item::Return(Some(Expr::from(format!(
+                        "\"{}\"",
+                        name
+                    ))))]),
                 });
             }
             Variant::Field { name, .. } => {
                 let variant_const = escape_keyword(name);
                 match_arms.push(MatchArm {
                     pattern: Expr::ident(&variant_const),
-                    body: Block::from(vec![Item::Return(Expr::binary_op(
+                    body: Block::from(vec![Item::Return(Some(Expr::binary_op(
                         Expr::from(format!("\"{}(\"", name)),
                         Operator::Add,
                         Expr::binary_op(
@@ -450,7 +453,7 @@ fn gen_to_string_method(variants: &[Variant]) -> FnDef {
                             Operator::Add,
                             Expr::from("\")\""),
                         ),
-                    ))]),
+                    )))]),
                 });
             }
         }
@@ -465,6 +468,7 @@ fn gen_to_string_method(variants: &[Variant]) -> FnDef {
         .name("_to_string")
         .type_hint(TypeHint::Explicit("String".to_string()))
         .body(vec![match_stmt.into()])
+        .return_value(Expr::from(Literal::from("")))
         .build()
         .unwrap()
 }

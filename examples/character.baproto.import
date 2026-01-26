@@ -1,0 +1,16 @@
+[remap]
+
+importer="baproto.schema"
+type="Script"
+uid="uid://bjyd7d3geqeoh"
+path="res://.godot/imported/character.baproto-fddf8b08485d63b28fc5f983048e33b2.gd"
+
+[deps]
+
+files=["res://baproto/mod.gd", "res://baproto/examples/mod.gd", "res://baproto/examples/character/character.gd", "res://baproto/examples/character/mod.gd", "res://baproto/examples/character/job.gd"]
+
+source_file="res://examples/character.baproto"
+dest_files=["res://.godot/imported/character.baproto-fddf8b08485d63b28fc5f983048e33b2.gd", "res://baproto/mod.gd", "res://baproto/examples/mod.gd", "res://baproto/examples/character/character.gd", "res://baproto/examples/character/mod.gd", "res://baproto/examples/character/job.gd"]
+
+[params]
+

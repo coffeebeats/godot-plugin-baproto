@@ -387,7 +387,10 @@ impl FnCall {
         U: AsRef<str>,
     {
         FnCall {
-            args: vec![condition.into(), message.into()],
+            args: vec![
+                condition.into(),
+                Literal::String(message.as_ref().to_owned()).into(),
+            ],
             name: "assert".to_owned(),
             receiver: None,
         }

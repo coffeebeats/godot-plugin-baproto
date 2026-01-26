@@ -37,7 +37,7 @@ pub enum Item {
     Match(Match),
 
     /// Early return statement.
-    Return(Expr),
+    Return(Option<Expr>),
 }
 
 /* ------------------------- Impl: From<Assignment> ------------------------- */
@@ -109,8 +109,13 @@ impl super::Emit for Item {
             Item::Match(m) => m.emit(cw, w),
             Item::FnDef(f) => f.emit(cw, w),
             Item::Return(expr) => {
-                cw.write(w, "return ")?;
-                expr.emit(cw, w)
+                cw.write(w, "return")?;
+                if let Some(expr) = expr {
+                    cw.write(w, " ")?;
+                    expr.emit(cw, w)?;
+                }
+
+                Ok(())
             }
         }
     }

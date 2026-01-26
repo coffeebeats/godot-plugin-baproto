@@ -473,7 +473,7 @@ fn gen_reader_error_check() -> Item {
         Expr::ident("OK"),
     );
 
-    let return_stmt = Item::Return(FnCall::method(Expr::ident("_reader"), "get_error"));
+    let return_stmt = Item::Return(Some(FnCall::method(Expr::ident("_reader"), "get_error")));
 
     Item::If(
         IfBuilder::default()

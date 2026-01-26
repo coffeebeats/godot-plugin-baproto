@@ -95,8 +95,13 @@ dependencies = [
 
 [[package]]
 name = "baproto"
+<<<<<<< Updated upstream
 version = "0.2.3"
 source = "git+https://github.com/coffeebeats/build-a-proto.git?rev=97e540df3e6b82e900004e48a6b0e99d024bdab8#97e540df3e6b82e900004e48a6b0e99d024bdab8"
+=======
+version = "0.2.4"
+source = "git+https://github.com/coffeebeats/build-a-proto.git?rev=c914d6423abd165777c3352b55b0003e865977c1#c914d6423abd165777c3352b55b0003e865977c1"
+>>>>>>> Stashed changes
 dependencies = [
  "anyhow",
  "ariadne",

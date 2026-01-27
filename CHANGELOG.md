@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.10 (2026-01-27)
+
+## What's Changed
+* fix: upgrade `baproto` to latest by @coffeebeats in https://github.com/coffeebeats/godot-plugin-baproto/pull/46
+
+
+**Full Changelog**: https://github.com/coffeebeats/godot-plugin-baproto/compare/v0.1.9...v0.1.10
+
 ## 0.1.9 (2026-01-26)
 
 ## What's Changed

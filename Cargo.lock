@@ -95,8 +95,8 @@ dependencies = [
 
 [[package]]
 name = "baproto"
-version = "0.2.4"
-source = "git+https://github.com/coffeebeats/build-a-proto.git?rev=0356c8c8294ce242ea0db5fa5249842504ec3e38#0356c8c8294ce242ea0db5fa5249842504ec3e38"
+version = "0.2.6"
+source = "git+https://github.com/coffeebeats/build-a-proto.git?rev=7fd0e3619e89ed8a495037a85c384e8954b98b81#7fd0e3619e89ed8a495037a85c384e8954b98b81"
 dependencies = [
  "anyhow",
  "ariadne",

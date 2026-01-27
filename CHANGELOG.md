@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.11 (2026-01-27)
+
+## What's Changed
+* chore: update `baproto` to latest (fixes CI builds) by @coffeebeats in https://github.com/coffeebeats/godot-plugin-baproto/pull/48
+
+
+**Full Changelog**: https://github.com/coffeebeats/godot-plugin-baproto/compare/v0.1.10...v0.1.11
+
 ## 0.1.10 (2026-01-27)
 
 ## What's Changed

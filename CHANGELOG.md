@@ -1,5 +1,30 @@
 # Changelog
 
+## 0.1.11 (2026-01-27)
+
+## What's Changed
+* chore: update `baproto` to latest (fixes CI builds) by @coffeebeats in https://github.com/coffeebeats/godot-plugin-baproto/pull/48
+
+
+**Full Changelog**: https://github.com/coffeebeats/godot-plugin-baproto/compare/v0.1.10...v0.1.11
+
+## 0.1.10 (2026-01-27)
+
+## What's Changed
+* fix: upgrade `baproto` to latest by @coffeebeats in https://github.com/coffeebeats/godot-plugin-baproto/pull/46
+
+
+**Full Changelog**: https://github.com/coffeebeats/godot-plugin-baproto/compare/v0.1.9...v0.1.10
+
+## 0.1.9 (2026-01-26)
+
+## What's Changed
+* chore: delete leftover UID files by @coffeebeats in https://github.com/coffeebeats/godot-plugin-baproto/pull/43
+* chore: update transitive dependencies; use latest `baproto` version in CI by @coffeebeats in https://github.com/coffeebeats/godot-plugin-baproto/pull/45
+
+
+**Full Changelog**: https://github.com/coffeebeats/godot-plugin-baproto/compare/v0.1.8...v0.1.9
+
 ## 0.1.8 (2026-01-26)
 
 ## What's Changed

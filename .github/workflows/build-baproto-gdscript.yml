@@ -75,10 +75,10 @@ jobs:
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
 
-      - uses: "coffeebeats/build-a-proto/.github/actions/parse-rust-version@0356c8c8294ce242ea0db5fa5249842504ec3e38"
+      - uses: "coffeebeats/build-a-proto/.github/actions/parse-rust-version@7fd0e3619e89ed8a495037a85c384e8954b98b81"
         id: rust
 
-      - uses: "coffeebeats/build-a-proto/.github/actions/setup-rust@0356c8c8294ce242ea0db5fa5249842504ec3e38"
+      - uses: "coffeebeats/build-a-proto/.github/actions/setup-rust@7fd0e3619e89ed8a495037a85c384e8954b98b81"
         with:
           profile: minimal
           targets: ${{ inputs.target }}
@@ -92,7 +92,7 @@ jobs:
           echo "SDKROOT=$(xcrun -sdk macosx11.1 --show-sdk-path)" >> $GITHUB_ENV
           echo "MACOSX_DEPLOYMENT_TARGET=11.1" >> $GITHUB_ENV
 
-      - uses: "coffeebeats/build-a-proto/.github/actions/cargo-build@0356c8c8294ce242ea0db5fa5249842504ec3e38"
+      - uses: "coffeebeats/build-a-proto/.github/actions/cargo-build@7fd0e3619e89ed8a495037a85c384e8954b98b81"
         with:
           platform: ${{ inputs.target }}
           profile: release

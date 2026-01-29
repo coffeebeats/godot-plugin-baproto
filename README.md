@@ -10,8 +10,8 @@ To use this plugin, add this repository as a submodule of a Godot project (typic
 
 #### Branch name (Release version): Godot version
 
-- `main` / `godot-v4.6` (`v1`): `v4.6`
-- `godot-v4.5` (`v0`): `v4.5`
+- `main` / `godot-v4.6` (`v0.2`): `v4.6`
+- `godot-v4.5` (`v0.1`): `v4.5`
 
 ## **Development**
 

@@ -8,12 +8,10 @@ A Godot addon that provides an editor plugin which compiles [`build-a-proto`](ht
 
 To use this plugin, add this repository as a submodule of a Godot project (typically under the `addons` directory). The following section lists which version should be used depending on the project's supported Godot version.
 
-#### Branch name / Release tag: Godot version
+#### Branch name (Release version): Godot version
 
-- `main` / `v3`: `v4.5`
-- `v2`: `v4.4`
-- `v1`: `v4.3`
-- `v0`: `v4.2`
+- `main` / `godot-v4.6` (`v1`): `v4.6`
+- `godot-v4.5` (`v0`): `v4.5`
 
 ## **Development**
 
@@ -47,7 +45,6 @@ When submitting code for review, ensure the following requirements are met:
 
     ```sh
     godot \
-        --quit \
         --headless \
         -s addons/gut/gut_cmdln.gd \
         -gdir="res://" \

@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.2.0 (2026-01-29)
+
+## What's Changed
+* chore!: update to Godot version `v4.6` by @coffeebeats in https://github.com/coffeebeats/godot-plugin-baproto/pull/50
+* fix(docs): Update versioning information in README.md by @coffeebeats in https://github.com/coffeebeats/godot-plugin-baproto/pull/52
+
+
+**Full Changelog**: https://github.com/coffeebeats/godot-plugin-baproto/compare/v0.1.11...v0.2.0
+
 ## 0.1.11 (2026-01-27)
 
 ## What's Changed

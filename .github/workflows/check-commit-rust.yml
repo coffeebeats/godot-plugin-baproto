@@ -24,7 +24,7 @@ jobs:
       rust_version: ${{ steps.rust.outputs.version }}
 
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
 
       - uses: "coffeebeats/build-a-proto/.github/actions/parse-rust-version@7fd0e3619e89ed8a495037a85c384e8954b98b81"
         id: rust
@@ -36,7 +36,7 @@ jobs:
     timeout-minutes: 5
 
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
 
       - uses: "coffeebeats/build-a-proto/.github/actions/setup-rust@7fd0e3619e89ed8a495037a85c384e8954b98b81"
         with:
@@ -58,7 +58,7 @@ jobs:
     timeout-minutes: 5
 
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
         with:
           # Checkout the "head_ref" (i.e. PR branch HEAD) in case a commit is
           # later needed. See https://github.com/stefanzweifel/git-auto-commit-action
@@ -105,7 +105,7 @@ jobs:
     timeout-minutes: 5
 
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
 
       - uses: "coffeebeats/build-a-proto/.github/actions/setup-rust@7fd0e3619e89ed8a495037a85c384e8954b98b81"
         with:
@@ -133,7 +133,7 @@ jobs:
     timeout-minutes: 5
 
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
 
       - uses: "coffeebeats/build-a-proto/.github/actions/setup-rust@7fd0e3619e89ed8a495037a85c384e8954b98b81"
         with:

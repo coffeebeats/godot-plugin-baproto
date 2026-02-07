@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.2.1 (2026-02-07)
+
+## What's Changed
+* fix(ci): ignore test UID files and nested agent instructions by @coffeebeats in https://github.com/coffeebeats/godot-plugin-baproto/pull/55
+* chore(deps): bump clap from 4.5.54 to 4.5.56 by @dependabot[bot] in https://github.com/coffeebeats/godot-plugin-baproto/pull/54
+* chore(deps): bump actions/checkout from 6.0.1 to 6.0.2 by @dependabot[bot] in https://github.com/coffeebeats/godot-plugin-baproto/pull/53
+
+
+**Full Changelog**: https://github.com/coffeebeats/godot-plugin-baproto/compare/v0.2.0...v0.2.1
+
 ## 0.2.0 (2026-01-29)
 
 ## What's Changed

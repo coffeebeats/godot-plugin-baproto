@@ -12,7 +12,7 @@
 [dependencies]
   anyhow         = "1.0.100"
   baproto        = {git = "https://github.com/coffeebeats/build-a-proto.git", rev = "7fd0e3619e89ed8a495037a85c384e8954b98b81"}
-  clap           = {version = "4.5.53", features = ["derive"]}
+  clap           = {version = "4.5.56", features = ["derive"]}
   derive_builder = "0.20.2"
   derive_more    = {version = "2.1.1", features = ["display"]}
   serde          = {version = "1.0.228", features = ["derive"]}

@@ -73,7 +73,7 @@ jobs:
     timeout-minutes: ${{ fromJSON(inputs.timeout) }}
 
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
 
       - uses: "coffeebeats/build-a-proto/.github/actions/parse-rust-version@7fd0e3619e89ed8a495037a85c384e8954b98b81"
         id: rust

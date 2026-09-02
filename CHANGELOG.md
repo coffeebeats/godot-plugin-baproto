@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.2.2 (2026-09-02)
+
+## What's Changed
+* chore(deps): bump clap from 4.5.56 to 4.5.60 by @dependabot[bot] in https://github.com/coffeebeats/godot-plugin-baproto/pull/61
+* chore(deps): bump actions/download-artifact from 7.0.0 to 8.0.0 by @dependabot[bot] in https://github.com/coffeebeats/godot-plugin-baproto/pull/59
+* chore(deps): bump anyhow from 1.0.100 to 1.0.102 by @dependabot[bot] in https://github.com/coffeebeats/godot-plugin-baproto/pull/60
+* chore(deps): bump tj-actions/changed-files from 47.0.1 to 47.0.4 by @dependabot[bot] in https://github.com/coffeebeats/godot-plugin-baproto/pull/58
+* chore(deps): bump actions/upload-artifact from 6.0.0 to 7.0.0 by @dependabot[bot] in https://github.com/coffeebeats/godot-plugin-baproto/pull/57
+* chore(addons): update GUT to `v9.6.0` by @coffeebeats in https://github.com/coffeebeats/godot-plugin-baproto/pull/63
+* chore(deps): bump tj-actions/changed-files from 47.0.4 to 47.0.5 by @dependabot[bot] in https://github.com/coffeebeats/godot-plugin-baproto/pull/66
+* chore(deps): bump clap from 4.5.60 to 4.6.0 by @dependabot[bot] in https://github.com/coffeebeats/godot-plugin-baproto/pull/65
+* chore(deps): bump actions/download-artifact from 8.0.0 to 8.0.1 by @dependabot[bot] in https://github.com/coffeebeats/godot-plugin-baproto/pull/64
+* docs(readme): exclude vendored addons from the format and lint commands by @coffeebeats in https://github.com/coffeebeats/godot-plugin-baproto/pull/76
+
+
+**Full Changelog**: https://github.com/coffeebeats/godot-plugin-baproto/compare/v0.2.1...v0.2.2
+
 ## 0.2.1 (2026-02-07)
 
 ## What's Changed
